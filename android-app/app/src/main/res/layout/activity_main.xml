@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/classic_face">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/classic_blue"
+        android:padding="10dp"
+        android:text="Pixel Sheet Converter - Android test"
+        android:textColor="@color/classic_white"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/cameraPreview"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:background="#000000"
+                app:implementationMode="compatible"
+                app:scaleType="fillCenter" />
+
+            <ImageView
+                android:id="@+id/resultPreview"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:adjustViewBounds="true"
+                android:background="#FFFFFF"
+                android:contentDescription="Anteprima convertita"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/captureButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Scatta" />
+                <Button
+                    android:id="@+id/galleryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Galleria" />
+                <Button
+                    android:id="@+id/cameraSwitchButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cambia camera" />
+            </LinearLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Zoom" android:textStyle="bold" />
+            <SeekBar android:id="@+id/zoomSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Compensazione esposizione" android:textStyle="bold" />
+            <SeekBar android:id="@+id/exposureSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="0" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <CheckBox android:id="@+id/flashCheck" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Flash" />
+                <TextView android:id="@+id/cameraInfo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2" android:gravity="end" android:text="Fotocamera in preparazione" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:text="Conversione" android:textColor="@color/classic_blue" android:textSize="16sp" android:textStyle="bold" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:text="Larghezza celle" />
+                <EditText android:id="@+id/widthInput" android:layout_width="100dp" android:layout_height="wrap_content" android:inputType="number" android:text="240" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:text="Passo pixel (mm)" />
+                <EditText android:id="@+id/pitchInput" android:layout_width="100dp" android:layout_height="wrap_content" android:inputType="numberDecimal" android:text="0.5" />
+            </LinearLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Metrica colore" />
+            <Spinner android:id="@+id/metricSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dithering" />
+            <Spinner android:id="@+id/ditherSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/convertButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Converti immagine"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:max="100"
+                android:progressTint="@color/classic_green" />
+
+            <TextView
+                android:id="@+id/statisticsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#FFFFFF"
+                android:padding="8dp"
+                android:text="Scatta o importa un'immagine."
+                android:textIsSelectable="true" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <Button android:id="@+id/exportPngButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:enabled="false" android:text="Salva PNG" />
+                <Button android:id="@+id/exportXlsxButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:enabled="false" android:text="Salva XLSX" />
+                <Button android:id="@+id/backToCameraButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Fotocamera" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/classic_face"
+        android:padding="6dp"
+        android:text="Pronto" />
+</LinearLayout>

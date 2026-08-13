@@ -1,0 +1,238 @@
+package it.sc4tto.pixelsheetconverter
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.net.Uri
+import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.SeekBar
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
+import it.sc4tto.pixelsheetconverter.databinding.ActivityMainBinding
+import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var cameraExecutor: ExecutorService
+    private var camera: Camera? = null
+    private var imageCapture: ImageCapture? = null
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
+    private var sourceBitmap: Bitmap? = null
+    private var conversion: ConversionResult? = null
+
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startCamera() else status("Permesso fotocamera negato: puoi usare la galleria.")
+    }
+    private val galleryPicker = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { loadImage(it) }
+    }
+    private val pngCreator = registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
+        uri?.let { savePng(it) }
+    }
+    private val xlsxCreator = registerForActivityResult(ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) { uri ->
+        uri?.let { saveXlsx(it) }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        binding.metricSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.metrics)
+        binding.metricSpinner.setSelection(2)
+        binding.ditherSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.dithers)
+        binding.ditherSpinner.setSelection(2)
+
+        binding.captureButton.setOnClickListener { capture() }
+        binding.galleryButton.setOnClickListener { galleryPicker.launch("image/*") }
+        binding.cameraSwitchButton.setOnClickListener {
+            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
+            startCamera()
+        }
+        binding.convertButton.setOnClickListener { convert() }
+        binding.exportPngButton.setOnClickListener { pngCreator.launch("pixel_sheet_${System.currentTimeMillis()}.png") }
+        binding.exportXlsxButton.setOnClickListener { xlsxCreator.launch("pixel_sheet_${System.currentTimeMillis()}.xlsx") }
+        binding.backToCameraButton.setOnClickListener { showCamera() }
+        binding.flashCheck.setOnCheckedChangeListener { _, checked ->
+            imageCapture?.flashMode = if (checked) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
+        }
+        binding.zoomSeek.setOnSeekBarChangeListener(simpleSeek { value -> camera?.cameraControl?.setLinearZoom(value / 100f) })
+        binding.exposureSeek.setOnSeekBarChangeListener(simpleSeek { value ->
+            val state = camera?.cameraInfo?.exposureState ?: return@simpleSeek
+            if (state.isExposureCompensationSupported) camera?.cameraControl?.setExposureCompensationIndex(value + state.exposureCompensationRange.lower)
+        })
+        binding.cameraPreview.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val point = binding.cameraPreview.meteringPointFactory.createPoint(event.x, event.y)
+                camera?.cameraControl?.startFocusAndMetering(FocusMeteringAction.Builder(point).build())
+                status("Messa a fuoco sul punto selezionato")
+            }
+            true
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) startCamera()
+        else cameraPermission.launch(Manifest.permission.CAMERA)
+    }
+
+    private fun simpleSeek(action: (Int) -> Unit) = object : SeekBar.OnSeekBarChangeListener {
+        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) { if (fromUser) action(progress) }
+        override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+        override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+    }
+
+    private fun startCamera() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener({
+            try {
+                val provider = future.get()
+                val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+                val preview = Preview.Builder().build().also { it.setSurfaceProvider(binding.cameraPreview.surfaceProvider) }
+                imageCapture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
+                provider.unbindAll()
+                camera = provider.bindToLifecycle(this, selector, preview, imageCapture)
+                configureCameraControls()
+                showCamera()
+            } catch (exc: Exception) {
+                status("Fotocamera non disponibile: ${exc.message}")
+            }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun configureCameraControls() {
+        val state = camera?.cameraInfo?.exposureState
+        if (state != null && state.isExposureCompensationSupported) {
+            val range = state.exposureCompensationRange
+            binding.exposureSeek.max = range.upper - range.lower
+            binding.exposureSeek.progress = -range.lower
+            binding.exposureSeek.isEnabled = true
+            binding.cameraInfo.text = "EV ${range.lower}..${range.upper} | tocca per focus"
+        } else {
+            binding.exposureSeek.max = 0; binding.exposureSeek.isEnabled = false
+            binding.cameraInfo.text = "EV non disponibile | tocca per focus"
+        }
+        binding.flashCheck.isEnabled = camera?.cameraInfo?.hasFlashUnit() == true
+    }
+
+    private fun capture() {
+        val capture = imageCapture ?: return status("Fotocamera non pronta")
+        binding.captureButton.isEnabled = false
+        status("Acquisizione in corso...")
+        val file = File.createTempFile("pixel-sheet-", ".jpg", cacheDir)
+        capture.flashMode = if (binding.flashCheck.isChecked) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
+        capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(), cameraExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    runOnUiThread { binding.captureButton.isEnabled = true; loadImage(Uri.fromFile(file)) }
+                }
+                override fun onError(exception: ImageCaptureException) {
+                    runOnUiThread { binding.captureButton.isEnabled = true; status("Errore scatto: ${exception.message}") }
+                }
+            })
+    }
+
+    private fun loadImage(uri: Uri) {
+        try {
+            val decoded = contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it) } ?: error("Immagine non leggibile")
+            val orientation = contentResolver.openInputStream(uri).use { input ->
+                if (input == null) ExifInterface.ORIENTATION_NORMAL else ExifInterface(input).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            }
+            sourceBitmap = rotate(decoded, orientation)
+            conversion = null
+            binding.resultPreview.setImageBitmap(sourceBitmap)
+            binding.resultPreview.visibility = View.VISIBLE
+            binding.cameraPreview.visibility = View.GONE
+            binding.statisticsText.text = "Immagine: ${sourceBitmap!!.width} × ${sourceBitmap!!.height} px\nScegli i parametri e premi Converti."
+            binding.exportPngButton.isEnabled = false; binding.exportXlsxButton.isEnabled = false
+            status("Immagine acquisita")
+        } catch (exc: Exception) { status("Errore immagine: ${exc.message}") }
+    }
+
+    private fun rotate(bitmap: Bitmap, orientation: Int): Bitmap {
+        val degrees = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+        if (degrees == 0f) return bitmap
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(degrees) }, true)
+    }
+
+    private fun convert() {
+        val source = sourceBitmap ?: return status("Scatta o importa prima un'immagine")
+        val width = binding.widthInput.text.toString().toIntOrNull() ?: return status("Larghezza non valida")
+        val pitch = binding.pitchInput.text.toString().replace(',', '.').toDoubleOrNull() ?: return status("Passo non valido")
+        if (pitch <= 0) return status("Il passo deve essere positivo")
+        binding.convertButton.isEnabled = false; binding.progressBar.progress = 0
+        status("Conversione in corso...")
+        cameraExecutor.execute {
+            try {
+                val result = ImageConverter.convert(source, width, binding.metricSpinner.selectedItem.toString(), binding.ditherSpinner.selectedItem.toString()) { value ->
+                    runOnUiThread { binding.progressBar.progress = value }
+                }
+                conversion = result
+                val total = result.width * result.height
+                val report = "Risoluzione: ${result.width} × ${result.height}\n" +
+                    "Dimensione: %.2f × %.2f mm\n".format(result.width * pitch, result.height * pitch) +
+                    "Rosso: ${result.counts[0]} (%.1f%%)\n".format(result.counts[0] * 100.0 / total) +
+                    "Verde: ${result.counts[1]} (%.1f%%)\n".format(result.counts[1] * 100.0 / total) +
+                    "Blu: ${result.counts[2]} (%.1f%%)".format(result.counts[2] * 100.0 / total)
+                runOnUiThread {
+                    binding.resultPreview.setImageBitmap(result.bitmap)
+                    binding.statisticsText.text = report
+                    binding.exportPngButton.isEnabled = true; binding.exportXlsxButton.isEnabled = true
+                    binding.convertButton.isEnabled = true; status("Conversione completata")
+                }
+            } catch (exc: Exception) {
+                runOnUiThread { binding.convertButton.isEnabled = true; status("Errore conversione: ${exc.message}") }
+            }
+        }
+    }
+
+    private fun savePng(uri: Uri) {
+        val result = conversion ?: return
+        try {
+            contentResolver.openOutputStream(uri)?.use { result.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            toast("PNG salvato")
+        } catch (exc: Exception) { status("Errore PNG: ${exc.message}") }
+    }
+
+    private fun saveXlsx(uri: Uri) {
+        val result = conversion ?: return
+        status("Esportazione XLSX...")
+        cameraExecutor.execute {
+            try {
+                contentResolver.openOutputStream(uri)?.use { XlsxExporter.write(result, it) }
+                runOnUiThread { toast("XLSX salvato"); status("Esportazione completata") }
+            } catch (exc: Exception) { runOnUiThread { status("Errore XLSX: ${exc.message}") } }
+        }
+    }
+
+    private fun showCamera() {
+        binding.cameraPreview.visibility = View.VISIBLE
+        binding.resultPreview.visibility = View.GONE
+        status("Fotocamera pronta")
+    }
+    private fun status(text: String) { binding.statusText.text = text }
+    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+    override fun onDestroy() { super.onDestroy(); cameraExecutor.shutdown() }
+}

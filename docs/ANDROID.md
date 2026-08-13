@@ -1,10 +1,12 @@
 # Pixel Sheet Converter per Android
 
-La build 0.8 adotta l'interfaccia **MSN Companion**: riprende la struttura della versione Windows e il linguaggio visivo di Windows Live Messenger, con superfici azzurro-vetro, riflessi bianchi, bolle trasparenti, pannelli ghiaccio sovrapposti e accenti verde lime. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
+La build 0.9 adotta l'interfaccia **MSN Companion**: riprende la struttura della versione Windows e il linguaggio visivo di Windows Live Messenger, con superfici azzurro-vetro, riflessi bianchi, bolle trasparenti, pannelli ghiaccio sovrapposti e accenti verde lime. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
 
 Il tema mantiene un'impostazione elegante e leggibile: le decorazioni rimangono a bassa opacità, i pannelli utilizzano doppi bordi luminosi e il verde MSN identifica selezione, anteprime e azioni principali senza dominare l'interfaccia.
 
 La fotocamera non usa più fasce ondulate separate: il pannello superiore incorpora il proprio bordo curvo e i controlli inferiori sono contenuti in una nuvola sospesa con fotografia visibile intorno. I pulsanti utilizzano raggi più generosi, da 12 a 16 dp, senza diventare completamente ovali.
+
+Il bordo superiore dispone di due linee ondulate non coincidenti e lascia maggiore respiro sotto i pulsanti. La nuvola inferiore è ondulata sui quattro lati e raccordata da fillet ampi agli angoli.
 
 Il layout conserva bordi sottili, pannelli chiari e comandi con altezza uniforme. Gestisce inoltre le aree riservate alle barre di sistema e al foro della fotocamera Samsung. Le anteprime cambiano altezza in base alla larghezza utile del dispositivo e le etichette principali restano su una sola riga per evitare disallineamenti anche con caratteri di sistema ingranditi.
 

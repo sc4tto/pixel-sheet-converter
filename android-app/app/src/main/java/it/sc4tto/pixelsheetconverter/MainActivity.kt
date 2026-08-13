@@ -315,8 +315,8 @@ class MainActivity : AppCompatActivity() {
         val safe = safeInsets
         if (cameraMode) {
             binding.rootLayout.setPadding(0, 0, 0, 0)
-            binding.cameraTopBar.setPadding(dp(12) + safe.left, dp(7) + safe.top, dp(12) + safe.right, dp(7))
-            binding.cameraBottomBar.setPadding(dp(12) + safe.left, dp(21), dp(12) + safe.right, dp(10) + safe.bottom)
+            binding.cameraTopBar.setPadding(dp(12) + safe.left, dp(7) + safe.top, dp(12) + safe.right, dp(18))
+            binding.cameraBottomBar.setPadding(dp(17) + safe.left, dp(21), dp(17) + safe.right, dp(15) + safe.bottom)
         } else {
             val breathingRoom = dp(4)
             binding.rootLayout.setPadding(

@@ -34,7 +34,7 @@
             android:background="@drawable/msn_toolbar"
             android:paddingHorizontal="7dp"
             android:paddingVertical="3dp"
-            android:text="ANDROID 0.8"
+            android:text="ANDROID 0.9"
             android:textColor="@color/classic_blue"
             android:textSize="10sp"
             android:textStyle="bold" />

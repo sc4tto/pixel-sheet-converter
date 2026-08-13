@@ -1,6 +1,11 @@
 <resources>
-    <color name="classic_face">#D4D0C8</color>
-    <color name="classic_blue">#000080</color>
+    <color name="classic_face">#F1F3F4</color>
+    <color name="classic_blue">#355F7F</color>
     <color name="classic_white">#FFFFFF</color>
-    <color name="classic_green">#008000</color>
+    <color name="classic_green">#5E8C72</color>
+    <color name="soft_panel">#FAFBFB</color>
+    <color name="soft_line">#C4CDD3</color>
+    <color name="soft_text">#20262B</color>
+    <color name="soft_muted">#66727A</color>
+    <color name="soft_blue">#E2EBF1</color>
 </resources>

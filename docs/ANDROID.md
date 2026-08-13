@@ -1,5 +1,7 @@
 # Pixel Sheet Converter per Android
 
+La build 0.2 adotta il layout mobile **Soft Classic**: pannelli chiari, bordi sottili, comandi con altezza uniforme e gestione delle aree riservate alle barre di sistema e al foro della fotocamera Samsung. L'anteprima cambia altezza in base alla larghezza utile del dispositivo; le etichette dei pulsanti sono brevi e ridimensionabili per evitare ritorni a capo anche con caratteri di sistema ingranditi.
+
 La prima build Android è una versione di prova destinata inizialmente al Samsung Galaxy A36 e ai dispositivi Android 8 o successivi.
 
 ## Funzioni della build di prova

@@ -22,11 +22,14 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.exifinterface.media.ExifInterface
 import it.sc4tto.pixelsheetconverter.databinding.ActivityMainBinding
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -54,6 +57,20 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, insets ->
+            val safe = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val breathingRoom = dp(4)
+            view.setPadding(
+                safe.left,
+                safe.top + breathingRoom,
+                safe.right,
+                safe.bottom + breathingRoom,
+            )
+            view.post { resizePreviews(view.width - safe.left - safe.right) }
+            insets
+        }
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         binding.metricSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.metrics)
@@ -98,6 +115,17 @@ class MainActivity : AppCompatActivity() {
         override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
     }
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
+
+    private fun resizePreviews(safeWindowWidth: Int) {
+        // Il contenuto ha 12 dp di margine per lato. La proporzione 0,70 mantiene
+        // visibile la fotocamera senza occupare l'intero display verticale.
+        val contentWidth = (safeWindowWidth - dp(24)).coerceAtLeast(dp(280))
+        val adaptiveHeight = (contentWidth * 0.70f).roundToInt().coerceIn(dp(210), dp(320))
+        binding.cameraPreview.layoutParams = binding.cameraPreview.layoutParams.apply { height = adaptiveHeight }
+        binding.resultPreview.layoutParams = binding.resultPreview.layoutParams.apply { height = adaptiveHeight }
+    }
+
     private fun startCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
         val future = ProcessCameraProvider.getInstance(this)
@@ -124,7 +152,7 @@ class MainActivity : AppCompatActivity() {
             binding.exposureSeek.max = range.upper - range.lower
             binding.exposureSeek.progress = -range.lower
             binding.exposureSeek.isEnabled = true
-            binding.cameraInfo.text = "EV ${range.lower}..${range.upper} | tocca per focus"
+            binding.cameraInfo.text = "EV ${range.lower}…${range.upper}  ·  Tocca per focus"
         } else {
             binding.exposureSeek.max = 0; binding.exposureSeek.isEnabled = false
             binding.cameraInfo.text = "EV non disponibile | tocca per focus"

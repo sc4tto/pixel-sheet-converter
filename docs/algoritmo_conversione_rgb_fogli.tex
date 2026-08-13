@@ -4,18 +4,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage[a4paper,margin=20mm,headheight=15pt]{geometry}
-\usepackage{xcolor}
-\usepackage{amsmath,amssymb}
-\usepackage{booktabs,tabularx,array,longtable}
-\usepackage{listings}
-\usepackage{fancyhdr}
-\usepackage{hyperref}
-\usepackage{microtype}
-\usepackage{enumitem}
-\usepackage{tcolorbox}
-\usepackage{graphicx}
-\usepackage{caption}
-
+\usepackage{xcolor,amsmath,amssymb,booktabs,tabularx,array}
+\usepackage{listings,fancyhdr,hyperref,microtype,enumitem,tcolorbox}
 \definecolor{navy}{HTML}{17365D}
 \definecolor{lightblue}{HTML}{EAF2F8}
 \definecolor{codebg}{HTML}{F5F7F9}
@@ -24,355 +14,227 @@
 \definecolor{primaryred}{HTML}{FF0000}
 \definecolor{primarygreen}{HTML}{00FF00}
 \definecolor{primaryblue}{HTML}{0000FF}
-
-\hypersetup{colorlinks=true,linkcolor=navy,urlcolor=navy,pdftitle={Algoritmo di conversione da immagine a celle RGB}}
+\hypersetup{colorlinks=true,linkcolor=navy,urlcolor=navy,pdftitle={Pixel Sheet Converter 1.2 - algoritmo di conversione percettiva}}
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{Conversione immagine--foglio elettronico}
-\rhead{Algoritmo RGB}
+\lhead{Pixel Sheet Converter 1.2}
+\rhead{Algoritmo e architettura}
 \cfoot{\thepage}
-
-\lstdefinestyle{py}{
-  language=Python,
-  backgroundcolor=\color{codebg},
-  frame=single,
-  rulecolor=\color{coderule},
-  basicstyle=\ttfamily\scriptsize,
-  keywordstyle=\color{navy}\bfseries,
-  commentstyle=\color{darkgray}\itshape,
-  stringstyle=\color{primaryred!70!black},
-  breaklines=true,
-  showstringspaces=false,
-  columns=fullflexible,
-  keepspaces=true
-}
-
+\lstdefinestyle{py}{language=Python,backgroundcolor=\color{codebg},frame=single,rulecolor=\color{coderule},basicstyle=\ttfamily\scriptsize,keywordstyle=\color{navy}\bfseries,commentstyle=\color{darkgray}\itshape,stringstyle=\color{primaryred!70!black},breaklines=true,showstringspaces=false,columns=fullflexible,keepspaces=true}
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcommand{\rgbcell}[2]{\colorbox{#1}{\makebox[1.4em][c]{\color{#2}\strut}}}
-
-\title{\textbf{Conversione di un'immagine fotografica in una matrice di celle RGB}\\[4pt]
-\large Algoritmo, motivazioni e ottimizzazione per Excel e Google Fogli}
+\title{\textbf{Pixel Sheet Converter 1.2}\\[4pt]\large Conversione percettiva di immagini in matrici cromatiche, PNG e XLSX}
 \author{Documento tecnico esplicativo}
-\date{12 agosto 2026}
+\date{13 agosto 2026}
 
 \begin{document}
 \maketitle
-
-\begin{tcolorbox}[colback=lightblue,colframe=navy,title=Obiettivo]
-Trasformare una fotografia in un foglio elettronico nel quale ogni pixel della versione ridimensionata corrisponde a una cella quadrata. Ogni cella può usare esclusivamente uno dei tre colori primari digitali:
-\rgbcell{primaryred}{white}\, rosso \texttt{\#FF0000},
-\rgbcell{primarygreen}{black}\, verde \texttt{\#00FF00},
-\rgbcell{primaryblue}{white}\, blu \texttt{\#0000FF}.
-La distribuzione spaziale dei tre colori ricostruisce forme, luminosità e variazioni cromatiche mediante dithering.
+\begin{tcolorbox}[colback=lightblue,colframe=navy,title=Scopo del documento]
+Il software trasforma un'immagine continua in una matrice discreta: ogni pixel dell'immagine ridimensionata diventa un indice di palette e, nel foglio XLSX, una cella quadrata con riempimento statico. La versione 1.2 introduce metriche percettive, otto metodi di dithering, il calcolo della dimensione fisica per pen plotter e un'interfaccia Windows 2000 modernizzata. Questo documento descrive formule, motivazioni, compromessi e corrispondenza con il codice.
 \end{tcolorbox}
+\tableofcontents
+\newpage
 
-\section{Risultato e dati principali}
+\section{Pipeline completa}
+La pipeline corrente è composta dalle seguenti fasi:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item lettura e normalizzazione dell'immagine in sRGB a tre canali;
+\item ridimensionamento, mantenendo automaticamente il rapporto d'aspetto;
+\item definizione di una palette incorporata o personalizzata;
+\item trasformazione dei colori nello spazio scelto;
+\item assegnazione del colore di palette più vicino;
+\item eventuale dithering ordinato o diffusione dell'errore;
+\item produzione dell'anteprima PNG e delle statistiche;
+\item esportazione XLSX con celle quadrate e riempimenti statici;
+\item verifica dell'integrità del contenitore XLSX.
+\end{enumerate}
+Per l'immagine di riferimento, il passaggio da $1086\times1448$ a $543\times724$ produce
+\[543\cdot724=393\,132\text{ celle-pixel}.\]
+Il rapporto $3:4$ è preservato e ogni dimensione lineare viene dimezzata.
 
-La fotografia elaborata misurava $1086\times1448$ pixel. Per ottenere un documento sufficientemente dettagliato ma ancora esportabile e importabile in Google Fogli, è stata adottata una matrice di
-\[
-543\times724=393\,132\text{ celle-pixel}.
-\]
-Il rapporto d'aspetto resta invariato ($3:4$) e ciascuna dimensione lineare è dimezzata. Il numero complessivo di pixel è quindi un quarto dell'immagine di partenza.
+\section{Lettura, ridimensionamento e scala fisica}
+\subsection{Normalizzazione e ricampionamento}
+\noindent\begin{minipage}[t]{0.47\textwidth}
+\textbf{Operazione}
+\begin{lstlisting}[style=py]
+source = Image.open(path)
+source.load()
+source = source.convert("RGB")
+size = target_size(source.size, width)
+resized = source.resize(size, filter)
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\textbf{Motivazione}\par\smallskip
+La conversione esplicita in RGB elimina differenze fra immagini in scala di grigi, RGBA o altri modi PIL. Lanczos è il metodo predefinito perché conserva bene i dettagli nella riduzione. Bicubico e bilineare sono più morbidi; nearest-neighbor preserva invece i blocchi netti della pixel art.
+\end{minipage}
 
+Con larghezza richiesta $W$ e sorgente $W_s\times H_s$, l'altezza è
+\[H=\max\left(1,\operatorname{round}\left(H_s\frac{W}{W_s}\right)\right).\]
+Il programma impone inoltre un limite di sicurezza di due milioni di celle.
+
+\subsection{Dal passo pixel ai millimetri}
+Il parametro \emph{passo pixel} $p$ non modifica l'immagine digitale; descrive la distanza fisica fra due campioni consecutivi nel successivo workflow CNC o pen plotter. Le dimensioni teoriche sono
+\[L_x=W p,\qquad L_y=H p.\]
+Per esempio, $543\times724$ pixel con $p=0{,}5$ mm corrispondono a $271{,}5\times362$ mm. Il diametro della penna, la sovrapposizione e la calibrazione meccanica rimangono responsabilità del workflow Grasshopper/CNC.
+
+\section{Palette e rappresentazione discreta}
+Una palette $P=\{\mathbf c_0,\ldots,\mathbf c_{K-1}\}$ contiene colori sRGB espressi come triplette 0--255. Può essere una palette incorporata (RGB, RGB con bianco e nero, CMY, grigi) oppure una lista personalizzata di codici \texttt{\#RRGGBB}. Nel caso primario:
 \begin{center}
-\begin{tabular}{@{}lll@{}}
-\toprule
-Fase & Dimensioni & Funzione \\
-\midrule
-Immagine sorgente & $1086\times1448$ & riferimento fotografico completo \\
-Immagine di lavoro & $543\times724$ & matrice compatibile e dettagliata \\
-Foglio finale & $543\times724$ celle & un pixel per cella quadrata \\
-Palette & 3 colori & RGB primari puri \\
-\bottomrule
+\begin{tabular}{@{}lll@{}}\toprule
+Indice & Campione & Valore sRGB \\\midrule
+0 & \rgbcell{primaryred}{white} & \texttt{\#FF0000} \\
+1 & \rgbcell{primarygreen}{black} & \texttt{\#00FF00} \\
+2 & \rgbcell{primaryblue}{white} & \texttt{\#0000FF} \\\bottomrule
 \end{tabular}
 \end{center}
+Il risultato fondamentale non è una bitmap incorporata, ma una matrice $Q\in\{0,\ldots,K-1\}^{H\times W}$. Lo stesso $Q$ genera anteprima, conteggi, PNG e celle XLSX; questo evita discrepanze tra gli output.
 
-\section{Panoramica dell'algoritmo}
+\section{Metriche di confronto colore}
+Il colore assegnato al pixel $\mathbf p$ è
+\[i^*=\operatorname*{arg\,min}_{0\le i<K} d(T(\mathbf p),T(\mathbf c_i)),\]
+dove $T$ dipende dalla metrica scelta. Sono implementate quattro modalità.
 
-La pipeline è composta da sette operazioni:
-\begin{enumerate}[leftmargin=*,itemsep=2pt]
-  \item lettura e normalizzazione dell'immagine in RGB;
-  \item ridimensionamento con filtro Lanczos;
-  \item inizializzazione della palette primaria;
-  \item scelta del colore più vicino con distanza euclidea;
-  \item diffusione dell'errore con Floyd--Steinberg;
-  \item scrittura della matrice degli indici nel foglio;
-  \item applicazione di riempimenti statici e verifica del file XLSX.
-\end{enumerate}
+\subsection{RGB classico}
+I canali vengono normalizzati in $[0,1]$ e confrontati con distanza euclidea:
+\[d^2_{RGB}=\sum_{j\in\{r,g,b\}}(p_j-c_j)^2.\]
+È rapido e intuitivo, ma opera su valori sRGB codificati con gamma; uguali distanze numeriche non corrispondono a uguali differenze visive.
 
-\section{Spiegazione a fronte}
+\subsection{RGB lineare}
+Prima del confronto, ciascun canale sRGB normalizzato $u$ viene linearizzato:
+\[u_{lin}=\begin{cases}u/12{,}92,&u\le0{,}04045,\\\left((u+0{,}055)/1{,}055\right)^{2{,}4},&u>0{,}04045.\end{cases}\]
+La distanza euclidea viene quindi calcolata sull'energia luminosa lineare. È più fisicamente coerente dell'RGB classico, pur non essendo percettivamente uniforme.
 
-Nelle tabelle seguenti, a sinistra è riportata l'operazione algoritmica; a destra la sua funzione e la ragione della scelta.
-
-\subsection{1. Lettura e ridimensionamento}
-
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / codice}\par\smallskip
-\begin{lstlisting}[style=py]
-image = Image.open(source).convert("RGB")
-image = image.resize(
-    (543, 724),
-    Image.Resampling.LANCZOS
-)
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-La conversione in RGB garantisce tre canali numerici uniformi, ciascuno compreso tra 0 e 255. Il filtro Lanczos riduce la fotografia preservando meglio bordi e dettagli rispetto a un semplice campionamento del pixel più vicino. Il rapporto $543/724=3/4$ conserva le proporzioni originali.
-\end{minipage}
-
-Il ridimensionamento può essere interpretato come una ricostruzione filtrata. Per ogni nuovo pixel vengono combinati più pixel vicini dell'immagine sorgente attraverso un kernel sinc finestrato. Ciò limita scalettature e perdita brusca di dettaglio prima della drastica riduzione cromatica.
-
-\subsection{2. Definizione della palette}
-
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / codice}\par\smallskip
-\begin{lstlisting}[style=py]
-primaries = [
-    (255, 0, 0),   # rosso
-    (0, 255, 0),   # verde
-    (0, 0, 255)    # blu
-]
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-La palette contiene esattamente i primari additivi dello spazio RGB. Non sono ammessi bianco, nero, grigio, ciano, magenta, giallo o tonalità intermedie. I colori percepiti emergono soltanto dalla mescolanza ottica di celle adiacenti.
-\end{minipage}
-
-\subsection{3. Scelta del colore primario più vicino}
-
-Dato un pixel corrente $\mathbf{p}=(r,g,b)$ e un colore candidato $\mathbf{c}_i$, viene calcolata la distanza euclidea quadratica nello spazio RGB:
+\subsection{OKLab percettivo}
+L'RGB lineare viene trasformato prima nei segnali intermedi $l,m,s$:
 \[
-d_i^2=(r-c_{i,r})^2+(g-c_{i,g})^2+(b-c_{i,b})^2.
+\begin{bmatrix}l\\m\\s\end{bmatrix}=
+\begin{bmatrix}
+0{,}4122214708&0{,}5363325363&0{,}0514459929\\
+0{,}2119034982&0{,}6806995451&0{,}1073969566\\
+0{,}0883024619&0{,}2817188376&0{,}6299787005
+\end{bmatrix}
+\begin{bmatrix}r\\g\\b\end{bmatrix}.
 \]
-Il colore assegnato è
+Dopo la radice cubica componente per componente, una seconda matrice produce $L,a,b$. La distanza usata è euclidea in OKLab. È il valore predefinito perché offre un buon equilibrio fra somiglianza visiva e costo computazionale.
+
+\subsection{CIELAB e Delta E 2000}
+L'RGB lineare viene trasformato in XYZ D65, normalizzato rispetto al bianco di riferimento e convertito in CIELAB. La distanza $\Delta E_{00}$ corregge le differenze di luminosità, croma e tinta:
 \[
-i^*=\underset{i\in\{R,G,B\}}{\operatorname{argmin}}\;d_i^2.
+\Delta E_{00}=\sqrt{\left(\frac{\Delta L'}{S_L}\right)^2+\left(\frac{\Delta C'}{S_C}\right)^2+\left(\frac{\Delta H'}{S_H}\right)^2+R_T\frac{\Delta C'}{S_C}\frac{\Delta H'}{S_H}}.
 \]
+I fattori $S_L,S_C,S_H$ e il termine di rotazione $R_T$ modellano la diversa sensibilità umana nelle regioni dello spazio cromatico. È la scelta più raffinata disponibile, ma durante la diffusione dell'errore richiede più calcoli per ogni pixel.
 
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / codice}\par\smallskip
-\begin{lstlisting}[style=py]
-old = work[y][x]
-index = min(
-    range(3),
-    key=lambda i: sum(
-        (old[k] - primaries[i][k]) ** 2
-        for k in range(3)
-    )
-)
-new = primaries[index]
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-Si confronta il pixel con tutti e tre i primari e si sceglie quello geometricamente più vicino. La radice quadrata non viene calcolata: non cambierebbe l'ordine delle distanze e aggiungerebbe lavoro inutile. Senza la fase successiva, questa scelta produrrebbe grandi aree uniformi e perderebbe quasi tutti i chiaroscuri.
-\end{minipage}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}P{35mm}P{28mm}LL@{}}\toprule
+Metrica & Costo relativo & Vantaggio & Uso consigliato \\\midrule
+RGB classico & minimo & velocità & prove rapide \\
+RGB lineare & basso & luminosità fisica & resa tonale semplice \\
+OKLab & medio & accordo percettivo & scelta generale \\
+CIELAB $\Delta E_{00}$ & alto & confronto dettagliato & output finale \\\bottomrule
+\end{tabularx}
+\end{center}
 
-\subsection{4. Calcolo e diffusione dell'errore}
+\section{Quantizzazione e dithering}
+Senza dithering, ogni pixel viene assegnato indipendentemente al colore più vicino. È il metodo più veloce e produce regioni nette, ma perde sfumature.
 
-L'errore di quantizzazione è un vettore RGB:
-\[
-\mathbf{e}=\mathbf{p}-\mathbf{c}_{i^*}.
-\]
-Invece di eliminarlo, l'algoritmo lo distribuisce sui pixel non ancora elaborati secondo la matrice Floyd--Steinberg:
-\[
-\begin{array}{ccc}
- & \boxed{\text{pixel corrente}} & \frac{7}{16} \\
-\frac{3}{16} & \frac{5}{16} & \frac{1}{16}
-\end{array}
-\]
+\subsection{Diffusione dell'errore}
+Dopo l'assegnazione, l'errore resta calcolato nello spazio RGB di lavoro:
+\[\mathbf e=\mathbf p-\mathbf c_{i^*}.\]
+Esso viene distribuito ai pixel futuri secondo un kernel. Nel percorso serpentino la direzione è invertita nelle righe dispari, riducendo le trame orientate. Il buffer viene limitato a $[0,255]$ dopo ogni aggiornamento.
 
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / codice}\par\smallskip
-\begin{lstlisting}[style=py]
-error = [old[k] - new[k] for k in range(3)]
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}P{32mm}P{27mm}LL@{}}\toprule
+Metodo & Supporto & Carattere visivo & Considerazioni \\\midrule
+Floyd--Steinberg & 4 vicini & dettagliato & standard equilibrato \\
+Floyd serpentino & 4 vicini & meno direzionale & predefinito \\
+Atkinson & 6 vicini & chiaro e contrastato & diffonde $6/8$ dell'errore \\
+Sierra Lite & 3 vicini & leggero & adatto a grandi matrici \\
+Stucki & 12 vicini & morbido & diffusione ampia \\
+Jarvis--Judice--Ninke & 12 vicini & gradazioni regolari & kernel ampio \\\bottomrule
+\end{tabularx}
+\end{center}
+Per Floyd--Steinberg i pesi sono $7/16,3/16,5/16,1/16$ e sommano a uno. Sierra Lite usa $2/4,1/4,1/4$. Stucki normalizza il kernel su 42; JJN su 48.
 
-neighbors = (
-    ( 1, 0, 7/16),
-    (-1, 1, 3/16),
-    ( 0, 1, 5/16),
-    ( 1, 1, 1/16)
-)
+\subsection{Bayer 4x4}
+Il dithering ordinato non propaga l'errore. A ogni pixel viene aggiunta una soglia periodica derivata dalla matrice
+\[B=\begin{bmatrix}0&8&2&10\\12&4&14&6\\3&11&1&9\\15&7&13&5\end{bmatrix}.\]
+Nel programma l'offset è $(B/16-1/2)\cdot64$. Il risultato è deterministico, veloce e regolare, ma può mostrare la trama 4x4.
 
-for dx, dy, factor in neighbors:
-    nx, ny = x + dx, y + dy
-    if inside_image(nx, ny):
-        work[ny][nx] += error * factor
-        work[ny][nx] = clamp(work[ny][nx], 0, 255)
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-Il pixel appena elaborato non può riprodurre esattamente il colore originale. La differenza residua viene trasferita ai quattro vicini futuri. La somma dei pesi è $7/16+3/16+5/16+1/16=1$: l'errore non viene perso, ma ridistribuito. Il vincolo 0--255 impedisce valori RGB non validi. A distanza normale, l'occhio integra il mosaico e percepisce tonalità e luminosità che non esistono nelle singole celle.
-\end{minipage}
-
-\subsection{5. Produzione della matrice discreta}
-
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / codice}\par\smallskip
-\begin{lstlisting}[style=py]
-indices[y][x] = index
-
-# Valori possibili:
-# 0 -> #FF0000
-# 1 -> #00FF00
-# 2 -> #0000FF
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-L'immagine non viene trasferita nel foglio come bitmap incorporata. Si salva invece una matrice numerica di 543 colonne e 724 righe. Ogni elemento identifica il riempimento statico della cella corrispondente. Questa rappresentazione rende ogni pixel realmente selezionabile e modificabile come cella.
-\end{minipage}
-
-\subsection{6. Celle quadrate e riempimenti statici}
-
-\noindent\begin{minipage}[t]{0.48\textwidth}
-\textbf{Algoritmo / pseudocodice}\par\smallskip
-\begin{lstlisting}[style=py]
-set_column_width(3 pixels)
-set_row_height(3 pixels)
-hide_gridlines()
-hide_numeric_values()
-
-for each horizontal run:
-    apply_static_fill(run, RGB[index])
-\end{lstlisting}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\textbf{Spiegazione}\par\smallskip
-Altezza e larghezza sono impostate allo stesso valore, affinché ogni cella appaia quadrata. I numeri 0, 1 e 2 restano memorizzati ma vengono nascosti con un formato numerico vuoto. I colori sono riempimenti permanenti, non regole condizionali: questo evita il foglio bianco osservato durante l'importazione in Google Fogli.
-\end{minipage}
-
-\subsection{7. Ottimizzazione per sequenze orizzontali}
-
-Applicare lo stile cella per cella richiederebbe 393\,132 operazioni. Per ridurre il numero di modifiche, ogni riga è suddivisa in sequenze consecutive dello stesso colore (run-length styling):
-
+\section{Esportazione PNG e XLSX}
+Il PNG viene costruito sostituendo ogni indice con la sua tripletta di palette. Per XLSX, ogni indice è scritto come valore numerico nella cella corrispondente; il valore viene nascosto e il colore è applicato come riempimento statico.
 \begin{lstlisting}[style=py]
 for y in range(height):
     start = 0
-    color = indices[y][0]
+    color = indices[y, 0]
     for x in range(1, width + 1):
-        if x == width or indices[y][x] != color:
-            fill_range(y, start, x - 1, palette[color])
+        if x == width or indices[y, x] != color:
+            write_run(y, start, x - 1, color)
             start = x
             if x < width:
-                color = indices[y][x]
+                color = indices[y, x]
 \end{lstlisting}
+Il raggruppamento delle sequenze orizzontali riduce le operazioni di stile. I riempimenti statici, rispetto alla formattazione condizionale sperimentata inizialmente, sono importati in modo più affidabile da Google Fogli. Righe e colonne sono configurate per apparire quadrate e la griglia viene nascosta. Al termine il file viene riaperto come archivio ZIP e verificato.
 
-Una sequenza come
-\[
-R,R,R,G,G,B,B,B,B
-\]
-richiede tre operazioni di stile anziché nove. Il contenuto visivo non cambia: cambia soltanto l'efficienza con cui gli stili vengono scritti nel formato XLSX.
+\section{Statistiche, prestazioni e limiti}
+I conteggi derivano direttamente dalla matrice degli indici:
+\[n_i=\#\{(x,y):Q_{y,x}=i\},\qquad f_i=\frac{n_i}{WH}.\]
+Con $K$ colori, la quantizzazione senza dithering richiede $\Theta(WHK)$ operazioni. I kernel di diffusione aggiungono un numero costante di aggiornamenti per pixel, quindi l'ordine asintotico non cambia. La memoria è $\Theta(WH)$ per buffer RGB e matrice degli indici.
 
-\section{Compatibilità con Google Fogli}
+In pratica, $543\times724$ è un compromesso già impegnativo per XLSX e pen plotter. Una matrice da 177\,689 punti per un solo canale può generare tempi e percorsi meccanici molto elevati; il diradamento va scelto in funzione del passo, del diametro della penna e della scala finale, non solo dell'aspetto a schermo.
 
-La prima soluzione sperimentata utilizzava formattazione condizionale: il valore numerico della cella determinava dinamicamente il colore. Sebbene valida in Excel, l'importazione in Google Fogli non applicava correttamente il grande insieme di regole e il risultato appariva bianco.
-
-La soluzione finale adotta pertanto:
+\section{Architettura del software desktop}
+Il software separa quattro responsabilità:
 \begin{itemize}[leftmargin=*]
-  \item riempimenti statici memorizzati direttamente negli stili XLSX;
-  \item soli tre stili cromatici, riutilizzati in tutto il foglio;
-  \item valori numerici nascosti senza cancellarli;
-  \item griglia disattivata;
-  \item dimensioni uniformi delle righe e delle colonne.
+\item \texttt{converter.py}: trasformazioni cromatiche, dithering e matrice;
+\item \texttt{exporters.py}: serializzazione PNG/XLSX e verifica;
+\item \texttt{gui.py}: controlli, anteprime, statistiche e attività in thread;
+\item \texttt{updater.py}: interrogazione manuale dell'ultima GitHub Release.
 \end{itemize}
+L'interfaccia 1.2 adotta un linguaggio Windows 2000 modernizzato: Tahoma, grigio \texttt{\#D4D0C8}, intestazione blu \texttt{\#000080}, controlli compatti, menu, toolbar e barra di stato. Questa scelta è esclusivamente presentazionale: non cambia la matrice risultante. La cornice esterna resta nativa di Windows, preservando DPI, ridimensionamento e accessibilità.
 
-Queste scelte riducono le ambiguità d'importazione e rendono l'aspetto indipendente dal motore di calcolo delle regole condizionali.
+Le conversioni e le esportazioni lunghe sono eseguite in thread secondari; gli aggiornamenti grafici transitano attraverso una coda elaborata dal thread Tk principale. Ciò evita di bloccare l'interfaccia durante operazioni costose.
 
-\section{Perché la risoluzione finale è $543\times724$}
+\section{Aggiornamenti portatili e distribuzione}
+Il programma non si sovrascrive mentre è in esecuzione. Il pulsante \emph{Controlla aggiornamenti} legge l'ultima release pubblica, confronta il numero di versione e apre il download dello ZIP. L'utente chiude il programma, estrae la nuova cartella e conserva temporaneamente quella precedente.
 
-Sono state considerate tre scale:
+Una GitHub Action associata ai tag \texttt{v*} esegue test su Windows, costruisce l'applicazione con PyInstaller, comprime la cartella portatile e allega \texttt{PixelSheetConverter-Windows-x64.zip} alla Release. Il sistema è reversibile e non richiede privilegi amministrativi o installer.
 
-\begin{center}
-\begin{tabular}{@{}rrrr@{}}
-\toprule
-Larghezza & Altezza & Celle & Esito \\
-\midrule
-180 & 240 & 43\,200 & molto stabile, dettaglio limitato \\
-543 & 724 & 393\,132 & alta risoluzione verificata \\
-1086 & 1448 & 1\,572\,528 & esportazione non affidabile / memoria esaurita \\
-\bottomrule
-\end{tabular}
+\section{Guida alla scelta}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}P{38mm}P{38mm}LL@{}}\toprule
+Obiettivo & Metrica & Dithering & Nota \\\midrule
+Anteprima veloce & RGB classico & Nessuno/Sierra Lite & costo minimo \\
+Resa generale & OKLab & Floyd serpentino & consigliata \\
+Gradazioni morbide & OKLab & Stucki o JJN & più lenta \\
+Trama regolare & RGB lineare/OKLab & Bayer 4x4 & pattern visibile \\
+Confronto fine & $\Delta E_{00}$ & Floyd serpentino & costo massimo \\
+Pixel art & RGB classico & Nessuno + nearest & conserva i blocchi \\\bottomrule
+\end{tabularx}
 \end{center}
 
-La matrice finale contiene nove volte le celle della versione $180\times240$. Il livello successivo quadruplicherebbe ancora il carico e, nelle prove effettuate, la serializzazione del documento ha superato anche diversi gigabyte di memoria. Inoltre, un foglio con oltre 1,5 milioni di celle staticamente formattate sarebbe più lento da aprire, modificare e importare.
+\section{Verifiche}
+La suite automatica controlla mantenimento delle proporzioni, dimensioni del risultato, validità degli indici, conteggi, esportazione PNG, integrità ZIP dell'XLSX e presenza degli stili RGB. Un test attraversa tutte le quattro metriche con i nuovi dithering Sierra Lite, Stucki e JJN. La pipeline GitHub esegue i test su Windows prima della pubblicazione del pacchetto.
 
-\section{Verifiche eseguite}
-
-Prima della consegna sono stati controllati:
-\begin{enumerate}[leftmargin=*]
-  \item dimensione logica del foglio: intervallo \texttt{A1:TW724};
-  \item presenza della cella terminale \texttt{TW724};
-  \item numero totale: 393\,132 celle-pixel;
-  \item integrità ZIP del contenitore XLSX;
-  \item presenza nei file di stile dei soli codici \texttt{FFFF0000}, \texttt{FF00FF00} e \texttt{FF0000FF};
-  \item assenza di colori intermedi nella matrice;
-  \item completezza dell'inquadratura, dalla croce superiore alla vegetazione inferiore;
-  \item resa visiva mediante anteprima renderizzata.
-\end{enumerate}
-
-\section{Complessità computazionale}
-
-Indicando con $W$ la larghezza, $H$ l'altezza e $K=3$ il numero dei colori:
-\[
-T(W,H)=\Theta(W\,H\,K)=\Theta(W\,H),
-\]
-poiché $K$ è costante. La memoria principale necessaria per il buffer RGB e la matrice degli indici è anch'essa
-\[
-M(W,H)=\Theta(W\,H).
-\]
-La generazione del foglio dipende inoltre dal numero di sequenze cromatiche orizzontali: nel caso peggiore una sequenza per cella, nel caso migliore una sola sequenza per riga.
-
-\section{Limiti e possibili miglioramenti}
-
+\section{Limiti e sviluppi futuri}
 \begin{itemize}[leftmargin=*]
-  \item La distanza euclidea in RGB è semplice, ma non perfettamente uniforme rispetto alla percezione umana. Una variante potrebbe operare in CIELAB e convertire il risultato ai tre primari solo alla fine.
-  \item Floyd--Steinberg produce una trama direzionale. Il percorso serpentino (sinistra-destra, poi destra-sinistra) può ridurre alcuni artefatti.
-  \item Celle più piccole migliorano la fusione ottica ma possono essere arrotondate diversamente da Excel e Google Fogli.
-  \item Una suddivisione in più fogli permetterebbe di conservare la risoluzione integrale, ma non come unica immagine continua su un solo foglio.
-  \item I tre primari puri non includono nero o bianco: le zone scure e chiare sono simulate esclusivamente attraverso frequenze e accostamenti, con inevitabile alterazione cromatica.
+\item Il dithering seleziona il colore con una metrica eventualmente percettiva, ma diffonde ancora il vettore d'errore nel buffer RGB: è una scelta stabile e comprensibile, non una simulazione completa della visione.
+\item La dimensione fisica è teorica; non compensa backlash, diametro penna, deformazioni del supporto o calibrazione degli assi.
+\item XLSX non è un formato ideale per milioni di celle: oltre una certa scala conviene usare PNG o dati geometrici dedicati.
+\item Le palette molto ampie aumentano linearmente il costo del confronto.
+\item Il controllo aggiornamenti è manuale e richiede una connessione; le immagini restano elaborate localmente.
 \end{itemize}
 
-\section{Pseudocodice completo}
-
-\begin{lstlisting}[style=py]
-INPUT: fotografia RGB
-OUTPUT: foglio 543 x 724 con celle rosse, verdi o blu
-
-1. I <- converti_in_RGB(fotografia)
-2. I <- ridimensiona_Lanczos(I, 543, 724)
-3. P <- [(255,0,0), (0,255,0), (0,0,255)]
-4. W <- copia flottante di I
-5. crea matrice Q[724][543]
-
-6. per y = 0 ... 723:
-7.   per x = 0 ... 542:
-8.     p <- W[y][x]
-9.     i <- indice del colore P[i] piu vicino a p
-10.    Q[y][x] <- i
-11.    e <- p - P[i]
-12.    diffondi 7/16 di e a (x+1, y)
-13.    diffondi 3/16 di e a (x-1, y+1)
-14.    diffondi 5/16 di e a (x,   y+1)
-15.    diffondi 1/16 di e a (x+1, y+1)
-16.    limita ogni canale modificato all'intervallo [0,255]
-
-17. crea un foglio di 543 colonne e 724 righe
-18. imposta righe e colonne alla stessa dimensione
-19. nascondi griglia e valori numerici
-20. per ogni riga di Q:
-21.   raggruppa le celle consecutive con uguale indice
-22.   applica a ogni gruppo il riempimento statico P[indice]
-23. esporta in XLSX
-24. verifica dimensioni, stili, integrita e anteprima
-\end{lstlisting}
-
 \section{Conclusione}
+Pixel Sheet Converter 1.2 non si limita a sostituire un pixel con il primario RGB numericamente più vicino. Offre una catena controllabile che separa ricampionamento, spazio di confronto, dithering, scala fisica e formato di uscita. OKLab costituisce il compromesso predefinito per una lettura più vicina alla percezione umana; CIEDE2000 fornisce un'alternativa più rigorosa; i diversi kernel permettono di controllare trama e costo. La matrice unica degli indici mantiene coerenti anteprima, statistiche, PNG e XLSX, mentre la separazione tra motore, interfaccia ed esportazione rende l'applicazione verificabile e aggiornabile senza installazione.
 
-Il metodo converte una fotografia continua in una composizione discreta di celle, limitata ai soli primari RGB. La riconoscibilità non deriva dalla fedeltà di ogni singolo pixel, ma dalla conservazione statistica e spaziale dell'errore cromatico. Il dithering trasforma quindi un vincolo severo --- tre colori soltanto --- in una trama capace di suggerire molti più colori e livelli di luminosità. L'uso di riempimenti statici e di una risoluzione verificata rende infine il risultato utilizzabile sia in Excel sia, con maggiore affidabilità, in Google Fogli.
-
+\section*{Riferimenti essenziali}
+\begin{itemize}[leftmargin=*]
+\item IEC 61966-2-1, \emph{Multimedia systems and equipment - Colour measurement and management - sRGB}.
+\item G. Sharma, W. Wu, E. N. Dalal, ``The CIEDE2000 Color-Difference Formula'', \emph{Color Research \& Application}, 2005.
+\item B. Ottosson, \emph{A perceptual color space for image processing}, 2020, \url{https://bottosson.github.io/posts/oklab/}.
+\item R. W. Floyd, L. Steinberg, ``An Adaptive Algorithm for Spatial Greyscale'', \emph{Proceedings of the SID}, 1976.
+\item ECMA-376, \emph{Office Open XML File Formats}.
+\end{itemize}
 \end{document}

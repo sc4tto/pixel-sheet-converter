@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var sourceBitmap: Bitmap? = null
     private var conversion: ConversionResult? = null
+    private var watermarkedPreview: Bitmap? = null
     private var safeInsets: Insets = Insets.NONE
     private var previewContentWidth = 0
 
@@ -109,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             startCamera()
         }
         binding.convertButton.setOnClickListener { convert() }
+        binding.logoExportCheck.setOnCheckedChangeListener { _, _ -> updateResultPreview() }
         binding.exportPngButton.setOnClickListener { pngCreator.launch("pixel_sheet_${System.currentTimeMillis()}.png") }
         binding.exportXlsxButton.setOnClickListener { xlsxCreator.launch("pixel_sheet_${System.currentTimeMillis()}.xlsx") }
         binding.backToCameraButton.setOnClickListener { showCamera() }
@@ -209,6 +211,8 @@ class MainActivity : AppCompatActivity() {
             }
             sourceBitmap = rotate(decoded, orientation)
             conversion = null
+            watermarkedPreview?.recycle()
+            watermarkedPreview = null
             binding.sourcePreview.setImageBitmap(sourceBitmap)
             resizeImagePreview(binding.sourcePreview, sourceBitmap!!.width, sourceBitmap!!.height)
             binding.statisticsText.text = "Immagine: ${sourceBitmap!!.width} × ${sourceBitmap!!.height} px\nScegli i parametri e premi Converti."
@@ -254,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                 val report = "Palette: $paletteName\nRisoluzione: ${result.width} × ${result.height}\n" +
                     "Dimensione: %.2f × %.2f mm\n".format(result.width * pitch, result.height * pitch) + colorRows
                 runOnUiThread {
-                    binding.resultPreview.setImageBitmap(result.bitmap)
+                    updateResultPreview()
                     resizeImagePreview(binding.resultPreview, result.width, result.height)
                     binding.statisticsText.text = report
                     binding.exportPngButton.isEnabled = true; binding.exportXlsxButton.isEnabled = true
@@ -271,9 +275,29 @@ class MainActivity : AppCompatActivity() {
     private fun savePng(uri: Uri) {
         val result = conversion ?: return
         try {
-            contentResolver.openOutputStream(uri)?.use { result.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val exportedBitmap = if (binding.logoExportCheck.isChecked) {
+                WatermarkComposer.addLogo(this, result.bitmap)
+            } else {
+                result.bitmap
+            }
+            contentResolver.openOutputStream(uri)?.use {
+                exportedBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            if (exportedBitmap !== result.bitmap) exportedBitmap.recycle()
             toast("PNG salvato")
         } catch (exc: Exception) { status("Errore PNG: ${exc.message}") }
+    }
+
+    private fun updateResultPreview() {
+        val result = conversion ?: return
+        watermarkedPreview?.recycle()
+        watermarkedPreview = null
+        val preview = if (binding.logoExportCheck.isChecked) {
+            WatermarkComposer.addLogo(this, result.bitmap).also { watermarkedPreview = it }
+        } else {
+            result.bitmap
+        }
+        binding.resultPreview.setImageBitmap(preview)
     }
 
     private fun saveXlsx(uri: Uri) {
@@ -353,5 +377,9 @@ class MainActivity : AppCompatActivity() {
     }
     private fun status(text: String) { binding.statusText.text = text }
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
-    override fun onDestroy() { super.onDestroy(); cameraExecutor.shutdown() }
+    override fun onDestroy() {
+        watermarkedPreview?.recycle()
+        super.onDestroy()
+        cameraExecutor.shutdown()
+    }
 }

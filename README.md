@@ -85,7 +85,7 @@ La conversione avviene interamente sul computer. Il programma non carica immagin
 
 ## Versione Android di prova
 
-Il progetto Android nativo si trova in `android-app`. Le funzioni e la procedura di installazione sul Samsung Galaxy A36 sono descritte in [`docs/ANDROID.md`](docs/ANDROID.md). La GitHub Action `Build Android APK` genera automaticamente un APK di collaudo installabile.
+Il progetto Android nativo si trova in `android-app`. Le funzioni e la procedura di installazione sul Samsung Galaxy A36 sono descritte in [`docs/ANDROID.md`](docs/ANDROID.md). La build 0.10 può aggiungere al PNG esportato il logo trasparente con i due dodecaedri, l'ombra viola e i segmenti neri. La GitHub Action `Build Android APK` genera automaticamente un APK di collaudo installabile.
 
 ## Documentazione tecnica
 

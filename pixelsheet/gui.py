@@ -3,21 +3,24 @@ from __future__ import annotations
 import json
 import queue
 import threading
+import webbrowser
 from pathlib import Path
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from PIL import Image, ImageTk
 
-from .converter import ConversionResult, convert_image, target_size
+from .converter import COLOR_METRICS, ConversionResult, convert_image, target_size
 from .exporters import export_png, export_xlsx
 from .palettes import BUILTIN_PALETTES, normalize_palette
+from .updater import check_for_update
+from .version import APP_VERSION
 
 
 class PixelSheetApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Pixel Sheet Converter")
+        self.title(f"Pixel Sheet Converter {APP_VERSION}")
         self.geometry("1240x780")
         self.minsize(1040, 680)
         self.source_path: Path | None = None
@@ -68,8 +71,16 @@ class PixelSheetApp(tk.Tk):
         self.resampling_var = tk.StringVar(value="Lanczos")
         ttk.Combobox(size_box, state="readonly", textvariable=self.resampling_var,
                      values=["Lanczos", "Bicubico", "Bilineare", "Pixel / nearest"], width=18).grid(row=1, column=1, sticky="e", pady=(8, 0))
+        ttk.Label(size_box, text="Passo pixel (mm)").grid(row=2, column=0, sticky="w", pady=(8, 0))
+        self.pitch_var = tk.DoubleVar(value=0.5)
+        pitch_spin = ttk.Spinbox(size_box, from_=0.01, to=100.0, increment=0.01,
+                                 textvariable=self.pitch_var, width=10, command=self._update_estimate)
+        pitch_spin.grid(row=2, column=1, sticky="e", pady=(8, 0))
+        pitch_spin.bind("<KeyRelease>", lambda _e: self._update_estimate())
         self.estimate_label = ttk.Label(size_box, text="Altezza: - | Celle: -")
-        self.estimate_label.grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        self.estimate_label.grid(row=3, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        self.physical_label = ttk.Label(size_box, text="Dimensione fisica: -")
+        self.physical_label.grid(row=4, column=0, columnspan=2, sticky="w", pady=(3, 0))
         size_box.columnconfigure(0, weight=1)
 
         color_box = ttk.LabelFrame(controls, text="3. Colori e dithering", style="Section.TLabelframe", padding=10)
@@ -82,10 +93,15 @@ class PixelSheetApp(tk.Tk):
         self.swatches = ttk.Frame(color_box)
         self.swatches.pack(fill="x", pady=7)
         ttk.Button(color_box, text="Modifica palette...", command=self.edit_palette).pack(fill="x")
+        ttk.Label(color_box, text="Confronto colore").pack(anchor="w", pady=(8, 2))
+        self.metric_var = tk.StringVar(value="OKLab percettivo")
+        ttk.Combobox(color_box, state="readonly", textvariable=self.metric_var,
+                     values=COLOR_METRICS).pack(fill="x")
         ttk.Label(color_box, text="Dithering").pack(anchor="w", pady=(8, 2))
         self.dither_var = tk.StringVar(value="Floyd-Steinberg serpentino")
         ttk.Combobox(color_box, state="readonly", textvariable=self.dither_var,
-                     values=["Nessuno", "Floyd-Steinberg", "Floyd-Steinberg serpentino", "Atkinson", "Bayer 4x4"]).pack(fill="x")
+                     values=["Nessuno", "Floyd-Steinberg", "Floyd-Steinberg serpentino", "Atkinson",
+                             "Bayer 4x4", "Sierra Lite", "Stucki", "Jarvis-Judice-Ninke"]).pack(fill="x")
         self._draw_swatches()
 
         action_box = ttk.LabelFrame(controls, text="4. Conversione", style="Section.TLabelframe", padding=10)
@@ -103,6 +119,7 @@ class PixelSheetApp(tk.Tk):
         self.png_button.pack(fill="x")
         self.xlsx_button = ttk.Button(export_box, text="Esporta XLSX per Google Fogli...", command=self.save_xlsx, state="disabled")
         self.xlsx_button.pack(fill="x", pady=(6, 0))
+        ttk.Button(export_box, text="Controlla aggiornamenti...", command=self.check_updates).pack(fill="x", pady=(6, 0))
 
         notebook = ttk.Notebook(preview)
         notebook.pack(fill="both", expand=True)
@@ -209,8 +226,13 @@ class PixelSheetApp(tk.Tk):
             cells = width * height
             warning = " - ALTO" if cells > 500_000 else ""
             self.estimate_label.config(text=f"Altezza: {height} | Celle: {cells:,}{warning}".replace(",", "."))
+            pitch = float(self.pitch_var.get())
+            if pitch <= 0:
+                raise ValueError("Il passo pixel deve essere maggiore di zero.")
+            self.physical_label.config(text=f"Dimensione fisica: {width*pitch:.2f} × {height*pitch:.2f} mm")
         except Exception as exc:
             self.estimate_label.config(text=str(exc))
+            self.physical_label.config(text="Dimensione fisica: -")
 
     def start_conversion(self):
         if not self.source_path:
@@ -233,7 +255,8 @@ class PixelSheetApp(tk.Tk):
 
     def _conversion_worker(self, width, colors):
         try:
-            result = convert_image(self.source_path, width, colors, self.dither_var.get(), self.resampling_var.get(), self._progress_event)
+            result = convert_image(self.source_path, width, colors, self.dither_var.get(),
+                                   self.resampling_var.get(), self._progress_event, self.metric_var.get())
             self.events.put(("converted", result))
         except Exception as exc:
             self.events.put(("error", str(exc)))
@@ -264,6 +287,23 @@ class PixelSheetApp(tk.Tk):
                     self.png_button.config(state="normal" if self.result else "disabled")
                     self.xlsx_button.config(state="normal" if self.result else "disabled")
                     messagebox.showerror("Errore", event[1])
+                elif event[0] == "update":
+                    data = event[1]
+                    if data["available"]:
+                        answer = messagebox.askyesno(
+                            "Aggiornamento disponibile",
+                            f"Versione installata: {data['current']}\n"
+                            f"Nuova versione: {data['latest']}\n\n"
+                            "Aprire la pagina di download?",
+                        )
+                        if answer:
+                            webbrowser.open(data["download_url"] or data["page_url"])
+                    else:
+                        messagebox.showinfo("Aggiornamenti", f"Hai già la versione più recente ({data['current']}).")
+                elif event[0] == "update_error":
+                    messagebox.showerror("Controllo aggiornamenti", event[1])
+                elif event[0] == "status":
+                    self.status_label.config(text=event[1])
         except queue.Empty:
             pass
         self.after(100, self._poll_events)
@@ -302,7 +342,19 @@ class PixelSheetApp(tk.Tk):
                 self.events.put(("error", str(exc)))
         threading.Thread(target=worker, daemon=True).start()
 
+    def check_updates(self):
+        self.status_label.config(text="Controllo aggiornamenti...")
+
+        def worker():
+            try:
+                self.events.put(("update", check_for_update()))
+            except Exception as exc:
+                self.events.put(("update_error", f"Impossibile controllare gli aggiornamenti:\n{exc}"))
+            finally:
+                self.events.put(("status", "Pronto"))
+
+        threading.Thread(target=worker, daemon=True).start()
+
 
 def run():
     PixelSheetApp().mainloop()
-

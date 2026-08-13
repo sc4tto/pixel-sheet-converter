@@ -1,4 +1,4 @@
-# Pixel Sheet Converter 1.0
+# Pixel Sheet Converter 1.1
 
 [![Tests](https://github.com/sc4tto/pixel-sheet-converter/actions/workflows/tests.yml/badge.svg)](https://github.com/sc4tto/pixel-sheet-converter/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -13,10 +13,24 @@ Applicazione grafica portatile per Windows 10/11 a 64 bit. Converte fotografie e
 - Ricampionamento Lanczos, bicubico, bilineare o nearest-neighbor.
 - Palette RGB, RGB con bianco/nero, CMY, scala di grigi e palette personalizzate.
 - Dithering: nessuno, Floyd-Steinberg, Floyd-Steinberg serpentino, Atkinson e Bayer 4x4.
+- Confronto colore selezionabile: RGB classico, RGB lineare, OKLab percettivo e CIELAB Delta E 2000.
+- Dithering aggiuntivi: Sierra Lite, Stucki e Jarvis–Judice–Ninke.
+- Calcolo della dimensione fisica in millimetri mediante il passo pixel, utile per pen plotter.
 - Statistiche e legenda per colore.
 - Esportazione PNG.
 - Esportazione XLSX con una cella per pixel e riempimenti statici.
 - Nessuna formattazione condizionale: maggiore compatibilità con Google Fogli.
+- Controllo manuale degli aggiornamenti dalla finestra del programma.
+
+## Aggiornare la versione portatile
+
+1. Premi `Controlla aggiornamenti...` nel programma.
+2. Se è disponibile una nuova versione, apri la pagina proposta e scarica `PixelSheetConverter-Windows-x64.zip`.
+3. Chiudi Pixel Sheet Converter.
+4. Estrai il nuovo archivio in una cartella separata.
+5. Conserva temporaneamente la vecchia cartella finché hai verificato la nuova versione; il programma non memorizza progetti o immagini dentro la propria cartella.
+
+L'app non si sovrascrive mentre è in esecuzione: per una distribuzione portatile la sostituzione della cartella è più affidabile e facilmente reversibile.
 
 ## Uso della versione portatile
 

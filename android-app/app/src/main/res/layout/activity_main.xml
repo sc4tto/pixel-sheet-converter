@@ -11,7 +11,7 @@
         android:id="@+id/appHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/classic_blue"
+        android:background="@drawable/aero_titlebar"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="14dp"
@@ -22,7 +22,7 @@
             android:layout_weight="1"
             android:maxLines="1"
             android:text="Pixel Sheet Converter"
-            android:textColor="@color/classic_white"
+            android:textColor="@color/aero_title_text"
             android:textStyle="bold"
             app:autoSizeMaxTextSize="19sp"
             app:autoSizeMinTextSize="14sp"
@@ -31,10 +31,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/soft_blue"
+            android:background="@drawable/aero_toolbar"
             android:paddingHorizontal="7dp"
             android:paddingVertical="3dp"
-            android:text="ANDROID 0.4"
+            android:text="ANDROID 0.5"
             android:textColor="@color/classic_blue"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -44,7 +44,7 @@
         android:id="@+id/navigationBar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="@color/soft_panel"
+        android:background="@drawable/aero_toolbar"
         android:baselineAligned="false"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp"
@@ -93,6 +93,7 @@
                 android:visibility="gone" />
 
             <LinearLayout
+                android:id="@+id/cameraTopBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
@@ -127,6 +128,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/cameraBottomBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
@@ -181,7 +183,7 @@
                     android:adjustViewBounds="true" android:background="@drawable/preview_frame" android:contentDescription="Immagine originale"
                     android:padding="4dp" android:scaleType="fitCenter" />
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/aero_panel" android:orientation="vertical" android:padding="12dp">
                     <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="2.1 Dimensioni" />
                     <LinearLayout style="@style/Widget.PixelSheet.FieldRow">
                         <TextView style="@style/Widget.PixelSheet.FieldName" android:text="Larghezza in celle" />
@@ -193,7 +195,7 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/aero_panel" android:orientation="vertical" android:padding="12dp">
                     <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="2.2 Colori e dithering" />
                     <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="8dp" android:text="Palette" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:orientation="horizontal">
@@ -226,7 +228,7 @@
                     android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="8dp"
                     android:adjustViewBounds="true" android:background="@drawable/preview_frame" android:contentDescription="Anteprima convertita"
                     android:padding="4dp" android:scaleType="fitCenter" />
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/aero_panel" android:orientation="vertical" android:padding="12dp">
                     <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="3.1 Statistiche e legenda" />
                     <TextView android:id="@+id/statisticsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Genera una conversione per visualizzare i risultati." android:textColor="@color/soft_text" android:textIsSelectable="true" android:textSize="14sp" />
                 </LinearLayout>
@@ -243,7 +245,7 @@
     <TextView
         android:id="@+id/statusText"
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:background="@color/soft_blue" android:maxLines="1"
+        android:background="@drawable/aero_toolbar" android:maxLines="1"
         android:paddingHorizontal="12dp" android:paddingVertical="7dp"
         android:text="Pronto" android:textColor="@color/soft_muted" android:textSize="12sp" />
 </LinearLayout>

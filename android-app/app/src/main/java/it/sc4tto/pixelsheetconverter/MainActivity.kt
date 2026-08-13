@@ -22,6 +22,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var sourceBitmap: Bitmap? = null
     private var conversion: ConversionResult? = null
+    private var safeInsets: Insets = Insets.NONE
 
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startCamera() else status("Permesso fotocamera negato: puoi usare la galleria.")
@@ -57,19 +59,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, insets ->
             val safe = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            val breathingRoom = dp(4)
-            view.setPadding(
-                safe.left,
-                safe.top + breathingRoom,
-                safe.right,
-                safe.bottom + breathingRoom,
-            )
+            safeInsets = safe
+            applySafeInsets(binding.screenFlipper.displayedChild == 0)
             view.post { resizePreviews(view.width - safe.left - safe.right) }
             insets
         }
@@ -287,11 +285,29 @@ class MainActivity : AppCompatActivity() {
             if (cameraMode) hide(WindowInsetsCompat.Type.systemBars())
             else show(WindowInsetsCompat.Type.systemBars())
         }
+        applySafeInsets(cameraMode)
         listOf(binding.navCameraButton, binding.navConvertButton, binding.navResultButton)
             .forEachIndexed { buttonIndex, button ->
                 button.alpha = if (buttonIndex == index) 1f else 0.58f
                 button.isSelected = buttonIndex == index
             }
+    }
+
+    private fun applySafeInsets(cameraMode: Boolean) {
+        val safe = safeInsets
+        if (cameraMode) {
+            binding.rootLayout.setPadding(0, 0, 0, 0)
+            binding.cameraTopBar.setPadding(dp(12) + safe.left, dp(7) + safe.top, dp(12) + safe.right, dp(7))
+            binding.cameraBottomBar.setPadding(dp(12) + safe.left, dp(7), dp(12) + safe.right, dp(10) + safe.bottom)
+        } else {
+            val breathingRoom = dp(4)
+            binding.rootLayout.setPadding(
+                safe.left,
+                safe.top + breathingRoom,
+                safe.right,
+                safe.bottom + breathingRoom,
+            )
+        }
     }
     private fun status(text: String) { binding.statusText.text = text }
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()

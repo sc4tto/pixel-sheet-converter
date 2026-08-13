@@ -1,6 +1,6 @@
 # Pixel Sheet Converter per Android
 
-La build 0.9 adotta l'interfaccia **MSN Companion**: riprende la struttura della versione Windows e il linguaggio visivo di Windows Live Messenger, con superfici azzurro-vetro, riflessi bianchi, bolle trasparenti, pannelli ghiaccio sovrapposti e accenti verde lime. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
+La build 0.10 adotta l'interfaccia **MSN Companion**: riprende la struttura della versione Windows e il linguaggio visivo di Windows Live Messenger, con superfici azzurro-vetro, riflessi bianchi, bolle trasparenti, pannelli ghiaccio sovrapposti e accenti verde lime. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
 
 Il tema mantiene un'impostazione elegante e leggibile: le decorazioni rimangono a bassa opacità, i pannelli utilizzano doppi bordi luminosi e il verde MSN identifica selezione, anteprime e azioni principali senza dominare l'interfaccia.
 
@@ -29,6 +29,7 @@ La prima build Android è una versione di prova destinata inizialmente al Samsun
 - Calcolo delle dimensioni fisiche mediante passo pixel.
 - Statistiche RGB.
 - Esportazione PNG e XLSX con riempimenti statici.
+- Watermark opzionale nel PNG: composizione con due dodecaedri, ombra viola e segmenti neri, con sfondo esterno trasparente e facce interne bianche. Il logo viene disposto in basso a destra con dimensione e margine proporzionali all'immagine.
 
 ## Installazione sul Samsung Galaxy A36
 

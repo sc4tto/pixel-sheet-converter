@@ -1,9 +1,11 @@
-# Pixel Sheet Converter 1.1
+# Pixel Sheet Converter 1.2
 
 [![Tests](https://github.com/sc4tto/pixel-sheet-converter/actions/workflows/tests.yml/badge.svg)](https://github.com/sc4tto/pixel-sheet-converter/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Applicazione grafica portatile per Windows 10/11 a 64 bit. Converte fotografie e immagini in matrici di celle quadrate colorate ed esporta file PNG e XLSX compatibili con Excel e Google Fogli.
+
+L'interfaccia utilizza uno stile Windows 2000 modernizzato: menu e barra strumenti classici, controlli compatti, area di anteprima ad alto contrasto e barra di stato, mantenendo la cornice nativa di Windows per compatibilità con DPI e ridimensionamento.
 
 ## Funzioni
 

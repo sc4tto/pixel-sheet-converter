@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import queue
 import threading
 import webbrowser
@@ -18,11 +17,19 @@ from .version import APP_VERSION
 
 
 class PixelSheetApp(tk.Tk):
+    CLASSIC_FACE = "#D4D0C8"
+    CLASSIC_LIGHT = "#FFFFFF"
+    CLASSIC_SHADOW = "#808080"
+    CLASSIC_DARK = "#404040"
+    CLASSIC_BLUE = "#000080"
+    CLASSIC_TEXT = "#000000"
+
     def __init__(self):
         super().__init__()
         self.title(f"Pixel Sheet Converter {APP_VERSION}")
-        self.geometry("1240x780")
-        self.minsize(1040, 680)
+        self.geometry("1240x820")
+        self.minsize(1040, 700)
+        self.configure(background=self.CLASSIC_FACE)
         self.source_path: Path | None = None
         self.source_image: Image.Image | None = None
         self.result: ConversionResult | None = None
@@ -36,32 +43,112 @@ class PixelSheetApp(tk.Tk):
 
     def _create_style(self):
         style = ttk.Style(self)
-        if "vista" in style.theme_names():
-            style.theme_use("vista")
-        style.configure("Title.TLabel", font=("Segoe UI", 19, "bold"), foreground="#17365D")
-        style.configure("Section.TLabelframe.Label", font=("Segoe UI", 10, "bold"), foreground="#17365D")
-        style.configure("Primary.TButton", font=("Segoe UI", 10, "bold"))
+        if "clam" in style.theme_names():
+            style.theme_use("clam")
+        style.configure(".", font=("Tahoma", 9), background=self.CLASSIC_FACE,
+                        foreground=self.CLASSIC_TEXT)
+        style.configure("TFrame", background=self.CLASSIC_FACE)
+        style.configure("TLabel", background=self.CLASSIC_FACE)
+        style.configure("TButton", background=self.CLASSIC_FACE, padding=(7, 4),
+                        borderwidth=2, relief="raised")
+        style.map("TButton",
+                  background=[("pressed", "#B8B4AC"), ("active", "#E4E0D8")],
+                  relief=[("pressed", "sunken"), ("!pressed", "raised")])
+        style.configure("Primary.TButton", font=("Tahoma", 9, "bold"),
+                        background=self.CLASSIC_FACE, padding=(7, 5))
+        style.configure("TLabelframe", background=self.CLASSIC_FACE, borderwidth=2,
+                        relief="groove")
+        style.configure("TLabelframe.Label", background=self.CLASSIC_FACE,
+                        font=("Tahoma", 9, "bold"))
+        style.configure("TEntry", fieldbackground=self.CLASSIC_LIGHT, borderwidth=2)
+        style.configure("TSpinbox", fieldbackground=self.CLASSIC_LIGHT, arrowsize=13)
+        style.configure("TCombobox", fieldbackground=self.CLASSIC_LIGHT,
+                        background=self.CLASSIC_FACE, arrowsize=13)
+        style.map("TCombobox", fieldbackground=[("readonly", self.CLASSIC_LIGHT)])
+        style.configure("TNotebook", background=self.CLASSIC_FACE, borderwidth=2)
+        style.configure("TNotebook.Tab", background=self.CLASSIC_FACE, padding=(12, 4),
+                        borderwidth=1)
+        style.map("TNotebook.Tab", background=[("selected", self.CLASSIC_LIGHT),
+                                                ("active", "#E4E0D8")])
+        style.configure("Classic.Horizontal.TProgressbar", troughcolor=self.CLASSIC_LIGHT,
+                        background="#008000", bordercolor=self.CLASSIC_SHADOW,
+                        lightcolor="#00A000", darkcolor="#006000")
+        style.configure("Preview.TLabel", background=self.CLASSIC_LIGHT,
+                        relief="sunken", borderwidth=2)
+        style.configure("Treeview", background=self.CLASSIC_LIGHT,
+                        fieldbackground=self.CLASSIC_LIGHT, rowheight=22)
+        style.configure("Treeview.Heading", font=("Tahoma", 9, "bold"),
+                        background=self.CLASSIC_FACE, relief="raised")
+
+    def _create_menu(self):
+        menu = tk.Menu(self, tearoff=False, font=("Tahoma", 9),
+                       background=self.CLASSIC_FACE, activebackground=self.CLASSIC_BLUE,
+                       activeforeground=self.CLASSIC_LIGHT)
+        file_menu = tk.Menu(menu, tearoff=False)
+        file_menu.add_command(label="Apri immagine...\tCtrl+O", command=self.open_image)
+        file_menu.add_separator()
+        file_menu.add_command(label="Esporta PNG...", command=self.save_png)
+        file_menu.add_command(label="Esporta XLSX...", command=self.save_xlsx)
+        file_menu.add_separator()
+        file_menu.add_command(label="Esci", command=self.destroy)
+        menu.add_cascade(label="File", menu=file_menu)
+        conversion_menu = tk.Menu(menu, tearoff=False)
+        conversion_menu.add_command(label="Genera anteprima\tF5", command=self.start_conversion)
+        menu.add_cascade(label="Conversione", menu=conversion_menu)
+        help_menu = tk.Menu(menu, tearoff=False)
+        help_menu.add_command(label="Controlla aggiornamenti...", command=self.check_updates)
+        help_menu.add_separator()
+        help_menu.add_command(label="Informazioni su Pixel Sheet Converter", command=self._show_about)
+        menu.add_cascade(label="?", menu=help_menu)
+        self.config(menu=menu)
+        self.bind_all("<Control-o>", lambda _event: self.open_image())
+        self.bind_all("<F5>", lambda _event: self.start_conversion())
+
+    def _show_about(self):
+        messagebox.showinfo(
+            "Informazioni su Pixel Sheet Converter",
+            f"Pixel Sheet Converter {APP_VERSION}\n\n"
+            "Conversione immagini in PNG e fogli XLSX a celle quadrate.\n"
+            "Interfaccia Windows 2000 modernizzata.\n\nLicenza MIT",
+        )
 
     def _create_ui(self):
-        root = ttk.Frame(self, padding=14)
+        self._create_menu()
+        root = ttk.Frame(self, padding=6)
         root.pack(fill="both", expand=True)
-        ttk.Label(root, text="Pixel Sheet Converter", style="Title.TLabel").pack(anchor="w")
-        ttk.Label(root, text="Trasforma immagini in celle quadrate compatibili con Excel e Google Fogli.").pack(anchor="w", pady=(0, 12))
+
+        title_bar = tk.Frame(root, background=self.CLASSIC_BLUE, relief="sunken", borderwidth=2)
+        title_bar.pack(fill="x", pady=(0, 5))
+        tk.Label(title_bar, text=" Pixel Sheet Converter", font=("Tahoma", 10, "bold"),
+                 background=self.CLASSIC_BLUE, foreground=self.CLASSIC_LIGHT,
+                 anchor="w", padx=4, pady=3).pack(side="left", fill="x", expand=True)
+        tk.Label(title_bar, text=f"Versione {APP_VERSION} ", font=("Tahoma", 8),
+                 background=self.CLASSIC_BLUE, foreground=self.CLASSIC_LIGHT,
+                 padx=4).pack(side="right")
+
+        toolbar = tk.Frame(root, background=self.CLASSIC_FACE, relief="raised", borderwidth=1)
+        toolbar.pack(fill="x", pady=(0, 5))
+        ttk.Button(toolbar, text="Apri...", command=self.open_image).pack(side="left", padx=2, pady=2)
+        ttk.Button(toolbar, text="Genera anteprima", command=self.start_conversion).pack(side="left", padx=2, pady=2)
+        ttk.Separator(toolbar, orient="vertical").pack(side="left", fill="y", padx=4, pady=3)
+        ttk.Button(toolbar, text="Aggiornamenti", command=self.check_updates).pack(side="left", padx=2, pady=2)
+        ttk.Label(toolbar, text="Immagine → palette → PNG / XLSX", anchor="e").pack(side="right", padx=8)
+
         content = ttk.Panedwindow(root, orient="horizontal")
         content.pack(fill="both", expand=True)
-        controls = ttk.Frame(content, padding=(0, 0, 12, 0), width=330)
+        controls = ttk.Frame(content, padding=(0, 0, 6, 0), width=330)
         preview = ttk.Frame(content)
         content.add(controls, weight=0)
         content.add(preview, weight=1)
 
-        file_box = ttk.LabelFrame(controls, text="1. Immagine", style="Section.TLabelframe", padding=10)
-        file_box.pack(fill="x", pady=(0, 8))
+        file_box = ttk.LabelFrame(controls, text="1. Immagine", padding=7)
+        file_box.pack(fill="x", pady=(0, 4))
         ttk.Button(file_box, text="Apri immagine...", command=self.open_image).pack(fill="x")
         self.file_label = ttk.Label(file_box, text="Nessuna immagine selezionata", wraplength=290)
         self.file_label.pack(anchor="w", pady=(7, 0))
 
-        size_box = ttk.LabelFrame(controls, text="2. Dimensioni", style="Section.TLabelframe", padding=10)
-        size_box.pack(fill="x", pady=8)
+        size_box = ttk.LabelFrame(controls, text="2. Dimensioni", padding=7)
+        size_box.pack(fill="x", pady=4)
         ttk.Label(size_box, text="Larghezza in celle").grid(row=0, column=0, sticky="w")
         self.width_var = tk.IntVar(value=543)
         width_spin = ttk.Spinbox(size_box, from_=16, to=16384, textvariable=self.width_var, width=10, command=self._update_estimate)
@@ -83,8 +170,8 @@ class PixelSheetApp(tk.Tk):
         self.physical_label.grid(row=4, column=0, columnspan=2, sticky="w", pady=(3, 0))
         size_box.columnconfigure(0, weight=1)
 
-        color_box = ttk.LabelFrame(controls, text="3. Colori e dithering", style="Section.TLabelframe", padding=10)
-        color_box.pack(fill="x", pady=8)
+        color_box = ttk.LabelFrame(controls, text="3. Colori e dithering", padding=7)
+        color_box.pack(fill="x", pady=4)
         self.palette_var = tk.StringVar(value="RGB primari")
         palette_combo = ttk.Combobox(color_box, state="readonly", textvariable=self.palette_var,
                                      values=list(BUILTIN_PALETTES) + ["Personalizzata"], width=28)
@@ -104,17 +191,16 @@ class PixelSheetApp(tk.Tk):
                              "Bayer 4x4", "Sierra Lite", "Stucki", "Jarvis-Judice-Ninke"]).pack(fill="x")
         self._draw_swatches()
 
-        action_box = ttk.LabelFrame(controls, text="4. Conversione", style="Section.TLabelframe", padding=10)
-        action_box.pack(fill="x", pady=8)
+        action_box = ttk.LabelFrame(controls, text="4. Conversione", padding=7)
+        action_box.pack(fill="x", pady=4)
         self.convert_button = ttk.Button(action_box, text="Genera anteprima", style="Primary.TButton", command=self.start_conversion)
         self.convert_button.pack(fill="x")
-        self.progress = ttk.Progressbar(action_box, maximum=100)
-        self.progress.pack(fill="x", pady=(9, 3))
-        self.status_label = ttk.Label(action_box, text="Pronto")
-        self.status_label.pack(anchor="w")
+        self.progress = ttk.Progressbar(action_box, maximum=100,
+                                        style="Classic.Horizontal.TProgressbar")
+        self.progress.pack(fill="x", pady=(7, 1))
 
-        export_box = ttk.LabelFrame(controls, text="5. Esportazione", style="Section.TLabelframe", padding=10)
-        export_box.pack(fill="x", pady=8)
+        export_box = ttk.LabelFrame(controls, text="5. Esportazione", padding=7)
+        export_box.pack(fill="x", pady=4)
         self.png_button = ttk.Button(export_box, text="Esporta PNG...", command=self.save_png, state="disabled")
         self.png_button.pack(fill="x")
         self.xlsx_button = ttk.Button(export_box, text="Esporta XLSX per Google Fogli...", command=self.save_xlsx, state="disabled")
@@ -123,15 +209,17 @@ class PixelSheetApp(tk.Tk):
 
         notebook = ttk.Notebook(preview)
         notebook.pack(fill="both", expand=True)
-        original_tab = ttk.Frame(notebook, padding=8)
-        result_tab = ttk.Frame(notebook, padding=8)
-        stats_tab = ttk.Frame(notebook, padding=8)
+        original_tab = ttk.Frame(notebook, padding=5)
+        result_tab = ttk.Frame(notebook, padding=5)
+        stats_tab = ttk.Frame(notebook, padding=5)
         notebook.add(original_tab, text="Originale")
         notebook.add(result_tab, text="Anteprima convertita")
         notebook.add(stats_tab, text="Statistiche e legenda")
-        self.original_label = ttk.Label(original_tab, text="Apri un'immagine per visualizzarla", anchor="center")
+        self.original_label = ttk.Label(original_tab, text="Apri un'immagine per visualizzarla",
+                                        anchor="center", style="Preview.TLabel")
         self.original_label.pack(fill="both", expand=True)
-        self.result_label = ttk.Label(result_tab, text="Genera l'anteprima", anchor="center")
+        self.result_label = ttk.Label(result_tab, text="Genera l'anteprima",
+                                      anchor="center", style="Preview.TLabel")
         self.result_label.pack(fill="both", expand=True)
         self.stats = ttk.Treeview(stats_tab, columns=("color", "count", "percent"), show="headings")
         self.stats.heading("color", text="Colore")
@@ -141,6 +229,14 @@ class PixelSheetApp(tk.Tk):
         self.stats.column("count", width=140, anchor="e")
         self.stats.column("percent", width=140, anchor="e")
         self.stats.pack(fill="both", expand=True)
+
+        status_bar = tk.Frame(root, background=self.CLASSIC_FACE, relief="sunken", borderwidth=2)
+        status_bar.pack(fill="x", pady=(5, 0))
+        self.status_label = tk.Label(status_bar, text="Pronto", font=("Tahoma", 8),
+                                     background=self.CLASSIC_FACE, anchor="w", padx=4, pady=2)
+        self.status_label.pack(side="left", fill="x", expand=True)
+        tk.Label(status_bar, text="NUM", font=("Tahoma", 8), width=6,
+                 background=self.CLASSIC_FACE, relief="sunken", borderwidth=1).pack(side="right", fill="y")
 
     def _palette_changed(self, _event=None):
         name = self.palette_var.get()
@@ -154,7 +250,8 @@ class PixelSheetApp(tk.Tk):
         for widget in self.swatches.winfo_children():
             widget.destroy()
         for color in self.palette_colors:
-            tk.Label(self.swatches, bg=color, width=4, height=1, relief="solid", borderwidth=1).pack(side="left", padx=2)
+            tk.Label(self.swatches, bg=color, width=4, height=1, relief="sunken",
+                     borderwidth=2).pack(side="left", padx=2)
 
     def edit_palette(self):
         window = tk.Toplevel(self)

@@ -16,9 +16,17 @@ data class ConversionResult(
 object ImageConverter {
     val metrics = listOf("RGB classico", "RGB lineare", "OKLab percettivo", "CIELAB Delta E 2000")
     val dithers = listOf("Nessuno", "Floyd-Steinberg", "Floyd-Steinberg serpentino", "Atkinson", "Bayer 4x4", "Sierra Lite", "Stucki", "Jarvis-Judice-Ninke")
-    val primaryPalette = intArrayOf(Color.RED, Color.GREEN, Color.BLUE)
+    val palettes = linkedMapOf(
+        "RGB primari" to intArrayOf(Color.RED, Color.GREEN, Color.BLUE),
+        "RGB + bianco e nero" to intArrayOf(Color.BLACK, Color.RED, Color.GREEN, Color.BLUE, Color.WHITE),
+        "CMY" to intArrayOf(Color.CYAN, Color.MAGENTA, Color.YELLOW),
+        "Scala di grigi (8)" to IntArray(8) { index ->
+            val value = (index * 255.0 / 7.0).roundToInt()
+            Color.rgb(value, value, value)
+        },
+    )
 
-    fun convert(source: Bitmap, targetWidth: Int, metric: String, dither: String,
+    fun convert(source: Bitmap, targetWidth: Int, paletteName: String, metric: String, dither: String,
                 progress: (Int) -> Unit = {}): ConversionResult {
         require(targetWidth in 16..2048) { "La larghezza deve essere tra 16 e 2048." }
         val targetHeight = max(1, (source.height.toDouble() * targetWidth / source.width).roundToInt())
@@ -33,7 +41,8 @@ object ImageConverter {
             work[i * 3 + 2] = Color.blue(packed[i]).toFloat()
         }
         progress(10)
-        val paletteRgb = primaryPalette.map { floatArrayOf(Color.red(it).toFloat(), Color.green(it).toFloat(), Color.blue(it).toFloat()) }
+        val palette = palettes[paletteName] ?: error("Palette sconosciuta: $paletteName")
+        val paletteRgb = palette.map { floatArrayOf(Color.red(it).toFloat(), Color.green(it).toFloat(), Color.blue(it).toFloat()) }
         val paletteMetric = paletteRgb.map { transform(it, metric) }
         val indices = when (dither) {
             "Nessuno" -> quantize(work, targetWidth, targetHeight, metric, paletteMetric, progress)
@@ -43,12 +52,12 @@ object ImageConverter {
                 diffuse(work, targetWidth, targetHeight, metric, paletteRgb, paletteMetric, kernel, serpentine, progress)
             }
         }
-        val output = IntArray(indices.size) { primaryPalette[indices[it]] }
+        val output = IntArray(indices.size) { palette[indices[it]] }
         val bitmap = Bitmap.createBitmap(output, targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-        val counts = IntArray(primaryPalette.size)
+        val counts = IntArray(palette.size)
         indices.forEach { counts[it]++ }
         progress(100)
-        return ConversionResult(bitmap, indices, targetWidth, targetHeight, counts, primaryPalette)
+        return ConversionResult(bitmap, indices, targetWidth, targetHeight, counts, palette)
     }
 
     private fun quantize(work: FloatArray, w: Int, h: Int, metric: String,

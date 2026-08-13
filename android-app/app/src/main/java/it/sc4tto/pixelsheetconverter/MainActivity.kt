@@ -4,12 +4,16 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.AdapterView
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private var sourceBitmap: Bitmap? = null
     private var conversion: ConversionResult? = null
     private var safeInsets: Insets = Insets.NONE
+    private var previewContentWidth = 0
 
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startCamera() else status("Permesso fotocamera negato: puoi usare la galleria.")
@@ -77,6 +82,12 @@ class MainActivity : AppCompatActivity() {
         binding.metricSpinner.setSelection(2)
         binding.ditherSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.dithers)
         binding.ditherSpinner.setSelection(2)
+        binding.paletteSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.palettes.keys.toList())
+        binding.paletteSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) = updatePaletteSwatches()
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+        updatePaletteSwatches()
 
         binding.navCameraButton.setOnClickListener { showScreen(0) }
         binding.navConvertButton.setOnClickListener {
@@ -134,9 +145,9 @@ class MainActivity : AppCompatActivity() {
         // Il contenuto ha 12 dp di margine per lato. La proporzione 0,70 mantiene
         // visibile la fotocamera senza occupare l'intero display verticale.
         val contentWidth = (safeWindowWidth - dp(24)).coerceAtLeast(dp(280))
-        val adaptiveHeight = (contentWidth * 0.70f).roundToInt().coerceIn(dp(210), dp(320))
-        binding.sourcePreview.layoutParams = binding.sourcePreview.layoutParams.apply { height = adaptiveHeight }
-        binding.resultPreview.layoutParams = binding.resultPreview.layoutParams.apply { height = adaptiveHeight }
+        previewContentWidth = contentWidth
+        sourceBitmap?.let { resizeImagePreview(binding.sourcePreview, it.width, it.height) }
+        conversion?.let { resizeImagePreview(binding.resultPreview, it.width, it.height) }
     }
 
     private fun startCamera() {
@@ -199,6 +210,7 @@ class MainActivity : AppCompatActivity() {
             sourceBitmap = rotate(decoded, orientation)
             conversion = null
             binding.sourcePreview.setImageBitmap(sourceBitmap)
+            resizeImagePreview(binding.sourcePreview, sourceBitmap!!.width, sourceBitmap!!.height)
             binding.statisticsText.text = "Immagine: ${sourceBitmap!!.width} × ${sourceBitmap!!.height} px\nScegli i parametri e premi Converti."
             binding.exportPngButton.isEnabled = false; binding.exportXlsxButton.isEnabled = false
             showScreen(1)
@@ -222,22 +234,28 @@ class MainActivity : AppCompatActivity() {
         val width = binding.widthInput.text.toString().toIntOrNull() ?: return status("Larghezza non valida")
         val pitch = binding.pitchInput.text.toString().replace(',', '.').toDoubleOrNull() ?: return status("Passo non valido")
         if (pitch <= 0) return status("Il passo deve essere positivo")
+        val paletteName = binding.paletteSpinner.selectedItem.toString()
+        val metricName = binding.metricSpinner.selectedItem.toString()
+        val ditherName = binding.ditherSpinner.selectedItem.toString()
         binding.convertButton.isEnabled = false; binding.progressBar.progress = 0
         status("Conversione in corso...")
         cameraExecutor.execute {
             try {
-                val result = ImageConverter.convert(source, width, binding.metricSpinner.selectedItem.toString(), binding.ditherSpinner.selectedItem.toString()) { value ->
+                val result = ImageConverter.convert(source, width, paletteName, metricName, ditherName) { value ->
                     runOnUiThread { binding.progressBar.progress = value }
                 }
                 conversion = result
                 val total = result.width * result.height
-                val report = "Risoluzione: ${result.width} × ${result.height}\n" +
-                    "Dimensione: %.2f × %.2f mm\n".format(result.width * pitch, result.height * pitch) +
-                    "Rosso: ${result.counts[0]} (%.1f%%)\n".format(result.counts[0] * 100.0 / total) +
-                    "Verde: ${result.counts[1]} (%.1f%%)\n".format(result.counts[1] * 100.0 / total) +
-                    "Blu: ${result.counts[2]} (%.1f%%)".format(result.counts[2] * 100.0 / total)
+                val colorRows = result.palette.indices.joinToString("\n") { index ->
+                    val color = result.palette[index]
+                    val hex = String.format("#%02X%02X%02X", Color.red(color), Color.green(color), Color.blue(color))
+                    "$hex: ${result.counts[index]} (%.1f%%)".format(result.counts[index] * 100.0 / total)
+                }
+                val report = "Palette: $paletteName\nRisoluzione: ${result.width} × ${result.height}\n" +
+                    "Dimensione: %.2f × %.2f mm\n".format(result.width * pitch, result.height * pitch) + colorRows
                 runOnUiThread {
                     binding.resultPreview.setImageBitmap(result.bitmap)
+                    resizeImagePreview(binding.resultPreview, result.width, result.height)
                     binding.statisticsText.text = report
                     binding.exportPngButton.isEnabled = true; binding.exportXlsxButton.isEnabled = true
                     binding.convertButton.isEnabled = true
@@ -279,7 +297,6 @@ class MainActivity : AppCompatActivity() {
         val cameraMode = index == 0
         binding.appHeader.visibility = if (cameraMode) View.GONE else View.VISIBLE
         binding.navigationBar.visibility = if (cameraMode) View.GONE else View.VISIBLE
-        binding.navigationWave.visibility = if (cameraMode) View.GONE else View.VISIBLE
         binding.statusText.visibility = if (cameraMode) View.GONE else View.VISIBLE
         WindowCompat.getInsetsController(window, binding.root).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -299,13 +316,7 @@ class MainActivity : AppCompatActivity() {
         if (cameraMode) {
             binding.rootLayout.setPadding(0, 0, 0, 0)
             binding.cameraTopBar.setPadding(dp(12) + safe.left, dp(7) + safe.top, dp(12) + safe.right, dp(7))
-            binding.cameraBottomBar.setPadding(dp(12) + safe.left, dp(7), dp(12) + safe.right, dp(10) + safe.bottom)
-            binding.cameraTopBar.post {
-                binding.cameraTopWave.translationY = (binding.cameraTopBar.height - dp(1)).toFloat()
-            }
-            binding.cameraBottomBar.post {
-                binding.cameraBottomWave.translationY = -(binding.cameraBottomBar.height - dp(1)).toFloat()
-            }
+            binding.cameraBottomBar.setPadding(dp(12) + safe.left, dp(21), dp(12) + safe.right, dp(10) + safe.bottom)
         } else {
             val breathingRoom = dp(4)
             binding.rootLayout.setPadding(
@@ -314,6 +325,30 @@ class MainActivity : AppCompatActivity() {
                 safe.right,
                 safe.bottom + breathingRoom,
             )
+        }
+    }
+
+    private fun resizeImagePreview(view: View, imageWidth: Int, imageHeight: Int) {
+        if (imageWidth <= 0 || imageHeight <= 0) return
+        val width = previewContentWidth.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - dp(24))
+        val naturalHeight = (width.toDouble() * imageHeight / imageWidth).roundToInt()
+        val maxHeight = (resources.displayMetrics.heightPixels * 0.58f).roundToInt()
+        view.layoutParams = view.layoutParams.apply { height = naturalHeight.coerceIn(dp(180), maxHeight) }
+    }
+
+    private fun updatePaletteSwatches() {
+        val name = binding.paletteSpinner.selectedItem?.toString() ?: ImageConverter.palettes.keys.first()
+        val colors = ImageConverter.palettes[name] ?: return
+        binding.paletteSwatches.removeAllViews()
+        colors.forEachIndexed { index, color ->
+            binding.paletteSwatches.addView(View(this).apply {
+                background = GradientDrawable().apply {
+                    setColor(color); setStroke(dp(1), Color.rgb(125, 145, 154)); cornerRadius = dp(3).toFloat()
+                }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                    if (index > 0) marginStart = dp(3)
+                }
+            })
         }
     }
     private fun status(text: String) { binding.statusText.text = text }

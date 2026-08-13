@@ -34,7 +34,7 @@
             android:background="@drawable/msn_toolbar"
             android:paddingHorizontal="7dp"
             android:paddingVertical="3dp"
-            android:text="ANDROID 0.7"
+            android:text="ANDROID 0.8"
             android:textColor="@color/classic_blue"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -66,11 +66,6 @@
             android:text="3  RISULTATO" />
     </LinearLayout>
 
-    <it.sc4tto.pixelsheetconverter.MsnWaveView
-        android:id="@+id/navigationWave"
-        android:layout_width="match_parent"
-        android:layout_height="7dp" />
-
     <ViewFlipper
         android:id="@+id/screenFlipper"
         android:layout_width="match_parent"
@@ -97,12 +92,11 @@
                 android:layout_height="match_parent"
                 android:visibility="gone" />
 
-            <LinearLayout
+            <it.sc4tto.pixelsheetconverter.MsnTopPanel
                 android:id="@+id/cameraTopBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top"
-                android:background="@drawable/msn_camera_top"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="12dp"
@@ -130,23 +124,18 @@
                     android:layout_height="40dp"
                     android:layout_marginStart="5dp"
                     android:text="PARAMETRI" />
-            </LinearLayout>
+            </it.sc4tto.pixelsheetconverter.MsnTopPanel>
 
-            <it.sc4tto.pixelsheetconverter.MsnWaveView
-                android:id="@+id/cameraTopWave"
-                android:layout_width="match_parent"
-                android:layout_height="7dp"
-                android:layout_gravity="top" />
-
-            <LinearLayout
+            <it.sc4tto.pixelsheetconverter.MsnCloudPanel
                 android:id="@+id/cameraBottomBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
-                android:background="@drawable/msn_camera_bottom"
+                android:layout_marginHorizontal="9dp"
+                android:layout_marginBottom="7dp"
                 android:orientation="vertical"
                 android:paddingHorizontal="12dp"
-                android:paddingTop="7dp"
+                android:paddingTop="21dp"
                 android:paddingBottom="10dp">
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -181,14 +170,7 @@
                     <com.google.android.material.button.MaterialButton android:id="@+id/captureButton" style="@style/Widget.PixelSheet.CameraCaptureButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="5dp" android:layout_weight="1.35" android:text="SCATTA" />
                     <com.google.android.material.button.MaterialButton android:id="@+id/cameraSwitchButton" style="@style/Widget.PixelSheet.CameraOverlayButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="5dp" android:layout_weight="1" android:text="CAMERA" />
                 </LinearLayout>
-            </LinearLayout>
-
-            <it.sc4tto.pixelsheetconverter.MsnWaveView
-                android:id="@+id/cameraBottomWave"
-                android:layout_width="match_parent"
-                android:layout_height="7dp"
-                android:layout_gravity="bottom"
-                android:rotation="180" />
+            </it.sc4tto.pixelsheetconverter.MsnCloudPanel>
         </FrameLayout>
 
         <!-- 2. CONVERSIONE -->
@@ -216,11 +198,8 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/msn_panel" android:orientation="vertical" android:padding="12dp">
                     <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="2.2 Colori e dithering" />
                     <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="8dp" android:text="Palette" />
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:orientation="horizontal">
-                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="3dp" android:layout_weight="1" android:background="#E54B45" />
-                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="3dp" android:layout_weight="1" android:background="#58A66C" />
-                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="3dp" android:layout_weight="1" android:background="#466EB5" />
-                    </LinearLayout>
+                    <Spinner android:id="@+id/paletteSpinner" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/input_frame" />
+                    <LinearLayout android:id="@+id/paletteSwatches" android:layout_width="match_parent" android:layout_height="24dp" android:layout_marginTop="6dp" android:orientation="horizontal" />
                     <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="10dp" android:text="Metrica colore" />
                     <Spinner android:id="@+id/metricSpinner" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/input_frame" />
                     <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="10dp" android:text="Dithering" />

@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
@@ -22,7 +23,9 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.exifinterface.media.ExifInterface
 import it.sc4tto.pixelsheetconverter.databinding.ActivityMainBinding
 import java.io.File
@@ -84,6 +87,10 @@ class MainActivity : AppCompatActivity() {
         binding.navResultButton.setOnClickListener {
             if (conversion != null) showScreen(2) else status("Genera prima una conversione")
         }
+        binding.cameraContinueButton.setOnClickListener { showScreen(1) }
+        binding.gridCheck.setOnCheckedChangeListener { _, enabled ->
+            binding.cameraGrid.visibility = if (enabled) View.VISIBLE else View.GONE
+        }
         showScreen(0)
 
         binding.captureButton.setOnClickListener { capture() }
@@ -130,7 +137,6 @@ class MainActivity : AppCompatActivity() {
         // visibile la fotocamera senza occupare l'intero display verticale.
         val contentWidth = (safeWindowWidth - dp(24)).coerceAtLeast(dp(280))
         val adaptiveHeight = (contentWidth * 0.70f).roundToInt().coerceIn(dp(210), dp(320))
-        binding.cameraPreview.layoutParams = binding.cameraPreview.layoutParams.apply { height = adaptiveHeight }
         binding.sourcePreview.layoutParams = binding.sourcePreview.layoutParams.apply { height = adaptiveHeight }
         binding.resultPreview.layoutParams = binding.resultPreview.layoutParams.apply { height = adaptiveHeight }
     }
@@ -272,6 +278,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun showScreen(index: Int) {
         binding.screenFlipper.displayedChild = index
+        val cameraMode = index == 0
+        binding.appHeader.visibility = if (cameraMode) View.GONE else View.VISIBLE
+        binding.navigationBar.visibility = if (cameraMode) View.GONE else View.VISIBLE
+        binding.statusText.visibility = if (cameraMode) View.GONE else View.VISIBLE
+        WindowCompat.getInsetsController(window, binding.root).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            if (cameraMode) hide(WindowInsetsCompat.Type.systemBars())
+            else show(WindowInsetsCompat.Type.systemBars())
+        }
         listOf(binding.navCameraButton, binding.navConvertButton, binding.navResultButton)
             .forEachIndexed { buttonIndex, button ->
                 button.alpha = if (buttonIndex == index) 1f else 0.58f

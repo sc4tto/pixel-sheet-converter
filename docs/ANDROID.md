@@ -1,8 +1,10 @@
 # Pixel Sheet Converter per Android
 
-La build 0.3 adotta l'interfaccia **Desktop Companion**: riprende colori, gerarchia e pannelli della versione Windows in una struttura mobile più chiara. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
+La build 0.4 adotta l'interfaccia **Desktop Companion**: riprende colori, gerarchia e pannelli della versione Windows in una struttura mobile più chiara. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
 
 Il layout conserva bordi sottili, pannelli chiari e comandi con altezza uniforme. Gestisce inoltre le aree riservate alle barre di sistema e al foro della fotocamera Samsung. Le anteprime cambiano altezza in base alla larghezza utile del dispositivo e le etichette principali restano su una sola riga per evitare disallineamenti anche con caratteri di sistema ingranditi.
+
+La modalità Fotocamera è immersiva: l'anteprima CameraX occupa tutta l'area sicura del display, mentre zoom, esposizione, flash, scatto, galleria e cambio camera sono sovrapposti all'immagine. Una griglia fotografica 3×3 può essere attivata dal comando **Griglia**. Le barre di sistema possono ricomparire temporaneamente con uno scorrimento dal bordo.
 
 La prima build Android è una versione di prova destinata inizialmente al Samsung Galaxy A36 e ai dispositivi Android 8 o successivi.
 
@@ -10,6 +12,7 @@ La prima build Android è una versione di prova destinata inizialmente al Samsun
 
 - Anteprima CameraX e scatto diretto.
 - Fotocamera posteriore o anteriore.
+- Anteprima fotografica immersiva a tutto schermo e griglia 3×3 attivabile.
 - Zoom, compensazione EV, flash e tap-to-focus quando supportati dal dispositivo.
 - Importazione dalla galleria.
 - Navigazione a tre fasi con anteprima separata dell'immagine originale e del risultato.

@@ -1,6 +1,8 @@
 # Pixel Sheet Converter per Android
 
-La build 0.2 adotta il layout mobile **Soft Classic**: pannelli chiari, bordi sottili, comandi con altezza uniforme e gestione delle aree riservate alle barre di sistema e al foro della fotocamera Samsung. L'anteprima cambia altezza in base alla larghezza utile del dispositivo; le etichette dei pulsanti sono brevi e ridimensionabili per evitare ritorni a capo anche con caratteri di sistema ingranditi.
+La build 0.3 adotta l'interfaccia **Desktop Companion**: riprende colori, gerarchia e pannelli della versione Windows in una struttura mobile più chiara. Il flusso è diviso in tre schermate — Fotocamera, Conversione e Risultato — raggiungibili dalla barra superiore e collegate da passaggi automatici.
+
+Il layout conserva bordi sottili, pannelli chiari e comandi con altezza uniforme. Gestisce inoltre le aree riservate alle barre di sistema e al foro della fotocamera Samsung. Le anteprime cambiano altezza in base alla larghezza utile del dispositivo e le etichette principali restano su una sola riga per evitare disallineamenti anche con caratteri di sistema ingranditi.
 
 La prima build Android è una versione di prova destinata inizialmente al Samsung Galaxy A36 e ai dispositivi Android 8 o successivi.
 
@@ -10,6 +12,7 @@ La prima build Android è una versione di prova destinata inizialmente al Samsun
 - Fotocamera posteriore o anteriore.
 - Zoom, compensazione EV, flash e tap-to-focus quando supportati dal dispositivo.
 - Importazione dalla galleria.
+- Navigazione a tre fasi con anteprima separata dell'immagine originale e del risultato.
 - Conversione locale e offline con palette RGB primaria.
 - RGB classico, RGB lineare, OKLab e CIELAB Delta E 2000.
 - Nessun dithering, Floyd-Steinberg, Floyd serpentino, Atkinson, Bayer 4x4, Sierra Lite, Stucki e Jarvis-Judice-Ninke.

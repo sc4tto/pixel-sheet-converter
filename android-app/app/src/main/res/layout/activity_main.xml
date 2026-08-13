@@ -4,8 +4,8 @@
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/classic_face">
+    android:background="@color/classic_face"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,9 +13,8 @@
         android:background="@color/classic_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="11dp">
-
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="9dp">
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -23,177 +22,157 @@
             android:maxLines="1"
             android:text="Pixel Sheet Converter"
             android:textColor="@color/classic_white"
-            android:textSize="20sp"
             android:textStyle="bold"
-            app:autoSizeMaxTextSize="20sp"
-            app:autoSizeMinTextSize="15sp"
+            app:autoSizeMaxTextSize="19sp"
+            app:autoSizeMinTextSize="14sp"
             app:autoSizeStepGranularity="1sp"
             app:autoSizeTextType="uniform" />
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/soft_blue"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="ANDROID  0.2"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="3dp"
+            android:text="ANDROID 0.3"
             android:textColor="@color/classic_blue"
             android:textSize="10sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <ScrollView
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/soft_panel"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/navCameraButton"
+            style="@style/Widget.PixelSheet.NavButton"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="1  FOTOCAMERA" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/navConvertButton"
+            style="@style/Widget.PixelSheet.NavButton"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="2  CONVERSIONE" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/navResultButton"
+            style="@style/Widget.PixelSheet.NavButton"
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:text="3  RISULTATO" />
+    </LinearLayout>
+
+    <ViewFlipper
+        android:id="@+id/screenFlipper"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_weight="1">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:clipToPadding="false"
-            android:paddingHorizontal="12dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="20dp">
+        <!-- 1. FOTOCAMERA -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                <TextView style="@style/Widget.PixelSheet.SectionTitle" android:text="1. Acquisizione immagine" />
+                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/preview_frame" android:padding="3dp">
+                    <androidx.camera.view.PreviewView
+                        android:id="@+id/cameraPreview"
+                        android:layout_width="match_parent" android:layout_height="250dp"
+                        android:background="#111417" app:implementationMode="compatible" app:scaleType="fillCenter" />
+                </FrameLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="8dp" android:baselineAligned="false" android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/captureButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="4dp" android:layout_weight="1" android:text="SCATTA" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/galleryButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="4dp" android:layout_weight="1" android:text="GALLERIA" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/cameraSwitchButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:text="CAMERA" />
+                </LinearLayout>
 
-            <androidx.camera.view.PreviewView
-                android:id="@+id/cameraPreview"
-                android:layout_width="match_parent"
-                android:layout_height="280dp"
-                android:background="#000000"
-                app:implementationMode="compatible"
-                app:scaleType="fillCenter" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                    <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="Controlli fotocamera" />
+                    <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="8dp" android:text="Zoom" />
+                    <SeekBar android:id="@+id/zoomSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" />
+                    <TextView style="@style/Widget.PixelSheet.FieldLabel" android:text="Compensazione esposizione" />
+                    <SeekBar android:id="@+id/exposureSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="0" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                        <CheckBox android:id="@+id/flashCheck" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Flash" />
+                        <TextView android:id="@+id/cameraInfo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.7" android:gravity="end" android:maxLines="2" android:text="Fotocamera in preparazione" android:textColor="@color/soft_muted" android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
 
-            <ImageView
-                android:id="@+id/resultPreview"
-                android:layout_width="match_parent"
-                android:layout_height="280dp"
-                android:adjustViewBounds="true"
-                android:background="@drawable/preview_frame"
-                android:padding="4dp"
-                android:contentDescription="Anteprima convertita"
-                android:scaleType="fitCenter"
-                android:visibility="gone" />
+        <!-- 2. CONVERSIONE -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                <TextView style="@style/Widget.PixelSheet.SectionTitle" android:text="2. Impostazioni conversione" />
+                <ImageView
+                    android:id="@+id/sourcePreview"
+                    android:layout_width="match_parent" android:layout_height="230dp" android:layout_marginTop="8dp"
+                    android:adjustViewBounds="true" android:background="@drawable/preview_frame" android:contentDescription="Immagine originale"
+                    android:padding="4dp" android:scaleType="fitCenter" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="10dp"
-                android:baselineAligned="false"
-                android:orientation="horizontal"
-                android:weightSum="3">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                    <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="2.1 Dimensioni" />
+                    <LinearLayout style="@style/Widget.PixelSheet.FieldRow">
+                        <TextView style="@style/Widget.PixelSheet.FieldName" android:text="Larghezza in celle" />
+                        <EditText android:id="@+id/widthInput" style="@style/Widget.PixelSheet.NumberInput" android:inputType="number" android:text="240" />
+                    </LinearLayout>
+                    <LinearLayout style="@style/Widget.PixelSheet.FieldRow">
+                        <TextView style="@style/Widget.PixelSheet.FieldName" android:text="Passo pixel (mm)" />
+                        <EditText android:id="@+id/pitchInput" style="@style/Widget.PixelSheet.NumberInput" android:inputType="numberDecimal" android:text="0.5" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                    <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="2.2 Colori e dithering" />
+                    <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="8dp" android:text="Palette" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:orientation="horizontal">
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="3dp" android:layout_weight="1" android:background="#E54B45" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="3dp" android:layout_weight="1" android:background="#58A66C" />
+                        <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="3dp" android:layout_weight="1" android:background="#466EB5" />
+                    </LinearLayout>
+                    <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="10dp" android:text="Metrica colore" />
+                    <Spinner android:id="@+id/metricSpinner" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/input_frame" />
+                    <TextView style="@style/Widget.PixelSheet.FieldLabel" android:layout_marginTop="10dp" android:text="Dithering" />
+                    <Spinner android:id="@+id/ditherSpinner" android:layout_width="match_parent" android:layout_height="48dp" android:background="@drawable/input_frame" />
+                </LinearLayout>
+
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/captureButton"
-                    style="@style/Widget.PixelSheet.ActionButton"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:text="SCATTA"
-                    android:textSize="13sp"
-                    app:autoSizeMaxTextSize="13sp"
-                    app:autoSizeMinTextSize="10sp"
-                    app:autoSizeTextType="uniform" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/galleryButton"
-                    style="@style/Widget.PixelSheet.ActionButton"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginHorizontal="4dp"
-                    android:layout_weight="1"
-                    android:text="GALLERIA"
-                    android:textSize="13sp"
-                    app:autoSizeMaxTextSize="13sp"
-                    app:autoSizeMinTextSize="10sp"
-                    app:autoSizeTextType="uniform" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/cameraSwitchButton"
-                    style="@style/Widget.PixelSheet.ActionButton"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="4dp"
-                    android:layout_weight="1"
-                    android:text="CAMERA"
-                    android:textSize="13sp"
-                    app:autoSizeMaxTextSize="13sp"
-                    app:autoSizeMinTextSize="10sp"
-                    app:autoSizeTextType="uniform" />
+                    android:id="@+id/convertButton" style="@style/Widget.PixelSheet.PrimaryButton"
+                    android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="10dp"
+                    android:text="GENERA CONVERSIONE" />
+                <ProgressBar android:id="@+id/progressBar" style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent" android:layout_height="5dp" android:layout_marginTop="8dp"
+                    android:max="100" android:progressTint="@color/classic_green" />
             </LinearLayout>
+        </ScrollView>
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="Zoom" android:textColor="@color/soft_text" android:textStyle="bold" />
-            <SeekBar android:id="@+id/zoomSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Compensazione esposizione" android:textColor="@color/soft_text" android:textStyle="bold" />
-            <SeekBar android:id="@+id/exposureSeek" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="0" />
-
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
-                <CheckBox android:id="@+id/flashCheck" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Flash" />
-                <TextView android:id="@+id/cameraInfo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.7" android:gravity="end" android:maxLines="2" android:text="Fotocamera in preparazione" android:textColor="@color/soft_muted" android:textSize="12sp" />
+        <!-- 3. RISULTATO -->
+        <ScrollView android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                <TextView style="@style/Widget.PixelSheet.SectionTitle" android:text="3. Risultato ed esportazione" />
+                <ImageView
+                    android:id="@+id/resultPreview"
+                    android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="8dp"
+                    android:adjustViewBounds="true" android:background="@drawable/preview_frame" android:contentDescription="Anteprima convertita"
+                    android:padding="4dp" android:scaleType="fitCenter" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
+                    <TextView style="@style/Widget.PixelSheet.PanelTitle" android:text="3.1 Statistiche e legenda" />
+                    <TextView android:id="@+id/statisticsText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Genera una conversione per visualizzare i risultati." android:textColor="@color/soft_text" android:textIsSelectable="true" android:textSize="14sp" />
+                </LinearLayout>
+                <TextView style="@style/Widget.PixelSheet.PanelTitle" android:layout_marginTop="12dp" android:text="3.2 Esportazione" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="6dp" android:baselineAligned="false" android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton android:id="@+id/exportPngButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="4dp" android:layout_weight="1" android:enabled="false" android:text="SALVA PNG" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/exportXlsxButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="4dp" android:layout_weight="1" android:enabled="false" android:text="SALVA XLSX" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/backToCameraButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:text="NUOVO" />
+                </LinearLayout>
             </LinearLayout>
-
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="@drawable/soft_panel" android:orientation="vertical" android:padding="12dp">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Conversione" android:textColor="@color/classic_blue" android:textSize="17sp" android:textStyle="bold" />
-
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:text="Larghezza celle" />
-                <EditText android:id="@+id/widthInput" android:layout_width="100dp" android:layout_height="wrap_content" android:inputType="number" android:text="240" />
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center_vertical" android:text="Passo pixel (mm)" />
-                <EditText android:id="@+id/pitchInput" android:layout_width="100dp" android:layout_height="wrap_content" android:inputType="numberDecimal" android:text="0.5" />
-            </LinearLayout>
-
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Metrica colore" />
-            <Spinner android:id="@+id/metricSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dithering" />
-            <Spinner android:id="@+id/ditherSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/convertButton"
-                style="@style/Widget.PixelSheet.PrimaryButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Converti immagine"
-                android:textStyle="bold" />
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="5dp"
-                android:layout_marginTop="8dp"
-                android:max="100"
-                android:progressTint="@color/classic_green" />
-
-            <TextView
-                android:id="@+id/statisticsText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/preview_frame"
-                android:padding="8dp"
-                android:text="Scatta o importa un'immagine."
-                android:textIsSelectable="true" />
-
-            <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="10dp" android:baselineAligned="false" android:orientation="horizontal">
-                <com.google.android.material.button.MaterialButton android:id="@+id/exportPngButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginEnd="4dp" android:layout_weight="1" android:enabled="false" android:text="PNG" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/exportXlsxButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginHorizontal="4dp" android:layout_weight="1" android:enabled="false" android:text="XLSX" />
-                <com.google.android.material.button.MaterialButton android:id="@+id/backToCameraButton" style="@style/Widget.PixelSheet.ActionButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="4dp" android:layout_weight="1" android:text="CAMERA" />
-            </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+    </ViewFlipper>
 
     <TextView
         android:id="@+id/statusText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/soft_blue"
-        android:maxLines="1"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="7dp"
-        android:text="Pronto"
-        android:textColor="@color/soft_muted"
-        android:textSize="12sp" />
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/soft_blue" android:maxLines="1"
+        android:paddingHorizontal="12dp" android:paddingVertical="7dp"
+        android:text="Pronto" android:textColor="@color/soft_muted" android:textSize="12sp" />
 </LinearLayout>

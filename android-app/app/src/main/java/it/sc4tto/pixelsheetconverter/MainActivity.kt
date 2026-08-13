@@ -8,7 +8,6 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
-import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.Toast
@@ -78,6 +77,15 @@ class MainActivity : AppCompatActivity() {
         binding.ditherSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ImageConverter.dithers)
         binding.ditherSpinner.setSelection(2)
 
+        binding.navCameraButton.setOnClickListener { showScreen(0) }
+        binding.navConvertButton.setOnClickListener {
+            if (sourceBitmap != null) showScreen(1) else status("Scatta o importa prima un'immagine")
+        }
+        binding.navResultButton.setOnClickListener {
+            if (conversion != null) showScreen(2) else status("Genera prima una conversione")
+        }
+        showScreen(0)
+
         binding.captureButton.setOnClickListener { capture() }
         binding.galleryButton.setOnClickListener { galleryPicker.launch("image/*") }
         binding.cameraSwitchButton.setOnClickListener {
@@ -123,6 +131,7 @@ class MainActivity : AppCompatActivity() {
         val contentWidth = (safeWindowWidth - dp(24)).coerceAtLeast(dp(280))
         val adaptiveHeight = (contentWidth * 0.70f).roundToInt().coerceIn(dp(210), dp(320))
         binding.cameraPreview.layoutParams = binding.cameraPreview.layoutParams.apply { height = adaptiveHeight }
+        binding.sourcePreview.layoutParams = binding.sourcePreview.layoutParams.apply { height = adaptiveHeight }
         binding.resultPreview.layoutParams = binding.resultPreview.layoutParams.apply { height = adaptiveHeight }
     }
 
@@ -185,11 +194,10 @@ class MainActivity : AppCompatActivity() {
             }
             sourceBitmap = rotate(decoded, orientation)
             conversion = null
-            binding.resultPreview.setImageBitmap(sourceBitmap)
-            binding.resultPreview.visibility = View.VISIBLE
-            binding.cameraPreview.visibility = View.GONE
+            binding.sourcePreview.setImageBitmap(sourceBitmap)
             binding.statisticsText.text = "Immagine: ${sourceBitmap!!.width} × ${sourceBitmap!!.height} px\nScegli i parametri e premi Converti."
             binding.exportPngButton.isEnabled = false; binding.exportXlsxButton.isEnabled = false
+            showScreen(1)
             status("Immagine acquisita")
         } catch (exc: Exception) { status("Errore immagine: ${exc.message}") }
     }
@@ -228,7 +236,9 @@ class MainActivity : AppCompatActivity() {
                     binding.resultPreview.setImageBitmap(result.bitmap)
                     binding.statisticsText.text = report
                     binding.exportPngButton.isEnabled = true; binding.exportXlsxButton.isEnabled = true
-                    binding.convertButton.isEnabled = true; status("Conversione completata")
+                    binding.convertButton.isEnabled = true
+                    showScreen(2)
+                    status("Conversione completata")
                 }
             } catch (exc: Exception) {
                 runOnUiThread { binding.convertButton.isEnabled = true; status("Errore conversione: ${exc.message}") }
@@ -256,9 +266,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showCamera() {
-        binding.cameraPreview.visibility = View.VISIBLE
-        binding.resultPreview.visibility = View.GONE
+        showScreen(0)
         status("Fotocamera pronta")
+    }
+
+    private fun showScreen(index: Int) {
+        binding.screenFlipper.displayedChild = index
+        listOf(binding.navCameraButton, binding.navConvertButton, binding.navResultButton)
+            .forEachIndexed { buttonIndex, button ->
+                button.alpha = if (buttonIndex == index) 1f else 0.58f
+                button.isSelected = buttonIndex == index
+            }
     }
     private fun status(text: String) { binding.statusText.text = text }
     private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()

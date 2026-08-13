@@ -34,7 +34,7 @@
             android:background="@drawable/msn_toolbar"
             android:paddingHorizontal="7dp"
             android:paddingVertical="3dp"
-            android:text="ANDROID 0.6"
+            android:text="ANDROID 0.7"
             android:textColor="@color/classic_blue"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -65,6 +65,11 @@
             android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
             android:text="3  RISULTATO" />
     </LinearLayout>
+
+    <it.sc4tto.pixelsheetconverter.MsnWaveView
+        android:id="@+id/navigationWave"
+        android:layout_width="match_parent"
+        android:layout_height="7dp" />
 
     <ViewFlipper
         android:id="@+id/screenFlipper"
@@ -127,6 +132,12 @@
                     android:text="PARAMETRI" />
             </LinearLayout>
 
+            <it.sc4tto.pixelsheetconverter.MsnWaveView
+                android:id="@+id/cameraTopWave"
+                android:layout_width="match_parent"
+                android:layout_height="7dp"
+                android:layout_gravity="top" />
+
             <LinearLayout
                 android:id="@+id/cameraBottomBar"
                 android:layout_width="match_parent"
@@ -171,6 +182,13 @@
                     <com.google.android.material.button.MaterialButton android:id="@+id/cameraSwitchButton" style="@style/Widget.PixelSheet.CameraOverlayButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_marginStart="5dp" android:layout_weight="1" android:text="CAMERA" />
                 </LinearLayout>
             </LinearLayout>
+
+            <it.sc4tto.pixelsheetconverter.MsnWaveView
+                android:id="@+id/cameraBottomWave"
+                android:layout_width="match_parent"
+                android:layout_height="7dp"
+                android:layout_gravity="bottom"
+                android:rotation="180" />
         </FrameLayout>
 
         <!-- 2. CONVERSIONE -->

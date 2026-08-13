@@ -279,6 +279,7 @@ class MainActivity : AppCompatActivity() {
         val cameraMode = index == 0
         binding.appHeader.visibility = if (cameraMode) View.GONE else View.VISIBLE
         binding.navigationBar.visibility = if (cameraMode) View.GONE else View.VISIBLE
+        binding.navigationWave.visibility = if (cameraMode) View.GONE else View.VISIBLE
         binding.statusText.visibility = if (cameraMode) View.GONE else View.VISIBLE
         WindowCompat.getInsetsController(window, binding.root).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -299,6 +300,12 @@ class MainActivity : AppCompatActivity() {
             binding.rootLayout.setPadding(0, 0, 0, 0)
             binding.cameraTopBar.setPadding(dp(12) + safe.left, dp(7) + safe.top, dp(12) + safe.right, dp(7))
             binding.cameraBottomBar.setPadding(dp(12) + safe.left, dp(7), dp(12) + safe.right, dp(10) + safe.bottom)
+            binding.cameraTopBar.post {
+                binding.cameraTopWave.translationY = (binding.cameraTopBar.height - dp(1)).toFloat()
+            }
+            binding.cameraBottomBar.post {
+                binding.cameraBottomWave.translationY = -(binding.cameraBottomBar.height - dp(1)).toFloat()
+            }
         } else {
             val breathingRoom = dp(4)
             binding.rootLayout.setPadding(

@@ -1,8 +1,8 @@
 <resources>
-    <color name="classic_face">#DCE4E8</color>
+    <color name="classic_face">#EDF5F8</color>
     <color name="classic_blue">#174F78</color>
     <color name="classic_white">#FFFFFF</color>
-    <color name="classic_green">#4D99A1</color>
+    <color name="classic_green">#63CF2D</color>
     <color name="soft_panel">#F6F9FA</color>
     <color name="soft_line">#9AAAB1</color>
     <color name="soft_text">#17242C</color>
